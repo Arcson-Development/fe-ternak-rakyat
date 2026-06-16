@@ -1,0 +1,242 @@
+/* Global resets and enterprise baseline for SITERNAK */
+
+:root {
+  --app-surface: #ffffff;
+  --app-surface-muted: #f5f7fa;
+  --app-surface-sunken: #eef1f6;
+  --app-border: #e2e8f0;
+  --app-border-strong: #cbd5e1;
+  --app-text: #0f172a;
+  --app-text-muted: #475569;
+  --app-text-subtle: #64748b;
+  --app-primary: #13bc6d;
+  --app-primary-soft: #e6faf4;
+  --app-accent: #f59e0b;
+  --app-success: #16a34a;
+  --app-warning: #f59e0b;
+  --app-danger: #dc2626;
+  --app-info: #2563eb;
+  --app-sidebar-bg: #0f172a;
+  --app-sidebar-fg: #cbd5e1;
+  --app-sidebar-fg-muted: #64748b;
+  --app-sidebar-active: #13bc6d;
+  --app-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --app-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --app-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--app-surface-muted);
+  color: var(--app-text);
+  font-feature-settings: "cv11", "ss01", "ss03";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Scrollbar polish */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.15);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.28);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+/* Utility classes (only the ones that earn their place) */
+.app-surface {
+  background-color: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  box-shadow: var(--app-shadow-sm);
+}
+
+.app-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--app-text-subtle);
+  margin-bottom: 8px;
+}
+
+/* Mantine Stepper polish */
+.mantine-Stepper-stepLabel {
+  font-size: 14px;
+}
+
+/* Dropzone polish */
+.mantine-Dropzone-root {
+  border-style: dashed !important;
+}
+
+/* Fix Mantine 7 AppShell main scroll on small screens */
+.mantine-AppShell-main {
+  background-color: var(--app-surface-muted);
+}
+
+/* Mobile bottom padding to avoid the floating bottom-nav */
+@media (max-width: 48em) {
+  .mantine-AppShell-main {
+    padding-bottom: 84px !important;
+  }
+}
+
+/* Safe area helper for notched devices */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Print: hide chrome */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Print: enterprise-grade print stylesheet */
+@media print {
+  body,
+  html {
+    background: white !important;
+    color: black !important;
+  }
+  .no-print-when-needed,
+  .no-print,
+  .mantine-AppShell-header,
+  .mantine-AppShell-navbar,
+  .mantine-Drawer-root,
+  button,
+  [role="tablist"] {
+    display: none !important;
+  }
+  .mantine-AppShell-main,
+  .print-area {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .mantine-Card-root {
+    border: 1px solid #ddd !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+  .mantine-Tabs-panel {
+    padding-top: 0 !important;
+  }
+  a {
+    color: black !important;
+    text-decoration: none !important;
+  }
+  /* Force the first tab panel (Identitas) to show even though tabs are hidden */
+  .mantine-Tabs-panel[hidden] {
+    display: block !important;
+  }
+}
+
+/* Leaflet UI polish */
+.leaflet-container {
+  font-family: inherit;
+}
+.leaflet-control-attribution {
+  font-size: 9px !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Login shell responsive */
+@media (max-width: 768px) {
+  .login-shell {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* ===== Dark mode ===== */
+[data-mantine-color-scheme="dark"] {
+  --app-bg: #0b1220;
+  --app-surface: #131b2e;
+  --app-surface-sunken: #0a1020;
+  --app-border: #1f2a44;
+  --app-border-strong: #2a3a5a;
+  --app-text: #e2e8f0;
+  --app-text-subtle: #94a3b8;
+  --app-text-muted: #64748b;
+  --app-sidebar-bg: #0e1726;
+  --app-primary-soft: rgba(19, 188, 109, 0.12);
+
+  /* Leaflet attribute baseline shifts for dark background */
+  --leaflet-tile-bg: #131b2e;
+}
+
+[data-mantine-color-scheme="dark"] .mantine-Card-root,
+[data-mantine-color-scheme="dark"] .mantine-Paper-root {
+  background-color: var(--app-surface);
+  border-color: var(--app-border);
+}
+
+[data-mantine-color-scheme="dark"] input,
+[data-mantine-color-scheme="dark"] textarea,
+[data-mantine-color-scheme="dark"] select,
+[data-mantine-color-scheme="dark"] .mantine-Input-input,
+[data-mantine-color-scheme="dark"] .mantine-Select-input,
+[data-mantine-color-scheme="dark"] .mantine-Textarea-input {
+  background-color: var(--app-surface-sunken) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+[data-mantine-color-scheme="dark"] .mantine-Table-table thead th {
+  background-color: var(--app-surface-sunken);
+}
+
+[data-mantine-color-scheme="dark"] .mantine-Spotlight-root,
+[data-mantine-color-scheme="dark"] .mantine-Modal-content,
+[data-mantine-color-scheme="dark"] .mantine-Drawer-content {
+  background-color: var(--app-surface) !important;
+  color: var(--app-text) !important;
+}
+
+[data-mantine-color-scheme="dark"] .mantine-Menu-dropdown {
+  background-color: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+}
+
+[data-mantine-color-scheme="dark"] .leaflet-container {
+  background: #131b2e !important;
+}
+
+[data-mantine-color-scheme="dark"] .recharts-cartesian-grid line,
+[data-mantine-color-scheme="dark"] .recharts-cartesian-axis line,
+[data-mantine-color-scheme="dark"] .recharts-cartesian-axis-tick-line {
+  stroke: #2a3a5a !important;
+}
+[data-mantine-color-scheme="dark"] .recharts-text {
+  fill: #94a3b8 !important;
+}
