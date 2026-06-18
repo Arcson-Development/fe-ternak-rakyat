@@ -26,13 +26,19 @@ import { useRouter } from "next/navigation";
 import { spotlight } from "@mantine/spotlight";
 import { NotificationsDrawer } from "./NotificationsDrawer";
 import { useThemeStore } from "../../hooks/useTheme";
+import { useHydrated } from "../../hooks/useHydrated";
 import { getCurrentUser, logout } from "../../lib/auth";
 
 type Props = { opened: boolean; toggle: () => void };
 
 export function AppShellHeader({ opened, toggle }: Props) {
   const router = useRouter();
-  const user = getCurrentUser();
+  // Gate user-derived UI on hydration so the SSR markup matches the
+  // first client render. getCurrentUser() reads cookies/localStorage
+  // which is unavailable during SSR, so without this gate the avatar
+  // initials render "AD" on the server and "AS" on the client.
+  const hydrated = useHydrated();
+  const user = hydrated ? getCurrentUser() : null;
 
   const initials = (user?.name ?? "AD")
     .split(" ")

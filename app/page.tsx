@@ -1,69 +1,61 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  Alert,
+  Anchor,
   Badge,
   Box,
   Button,
   Card,
+  Checkbox,
   Container,
+  Divider,
   Grid,
   Group,
+  Modal,
+  Paper,
+  PasswordInput,
+  ScrollArea,
   Stack,
   Text,
+  TextInput,
   ThemeIcon,
   Title,
 } from "@mantine/core";
+import { useForm } from "@mantine/form";
+import { useDisclosure } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
 import { useRouter } from "next/navigation";
 import {
-  IconBuildingWarehouse,
-  IconChartBar,
-  IconClipboardCheck,
+  IconBook,
+  IconCheck,
+  IconCircleNumber1,
+  IconCircleNumber2,
+  IconCircleNumber3,
+  IconCircleNumber4,
+  IconCircleNumber5,
+  IconLockSquare,
+  IconMail,
   IconMapPin,
+  IconMessage,
+  IconPhone,
   IconShieldCheck,
-  IconUsers,
+  IconUserCircle,
+  IconUserPlus,
   IconArrowRight,
 } from "@tabler/icons-react";
-
-const FEATURES = [
-  {
-    icon: IconClipboardCheck,
-    title: "Pendataan Terstruktur",
-    desc: "Formulir wizard 5-langkah yang memandu petugas lapangan mendaftarkan peternak secara lengkap dan konsisten.",
-  },
-  {
-    icon: IconMapPin,
-    title: "Verifikasi Geolokasi",
-    desc: "Setiap titik kandang terekam dengan koordinat GPS untuk mencegah duplikasi data dan mempercepat verifikasi.",
-  },
-  {
-    icon: IconBuildingWarehouse,
-    title: "Multi-Kandang",
-    desc: "Satu peternak dapat memiliki banyak kandang di lokasi berbeda, lengkap dengan dokumentasi kondisi & peralatan.",
-  },
-  {
-    icon: IconChartBar,
-    title: "Dasbor Operasional",
-    desc: "Ringkasan statistik, komposisi jenis usaha, dan integrasi kemitraan tampil dalam satu dasbor admin.",
-  },
-  {
-    icon: IconShieldCheck,
-    title: "Siap Integrasi",
-    desc: "Antarmuka data mengikuti契约 backend sehingga siap diintegrasikan dengan sistem nasional saat API tersedia.",
-  },
-  {
-    icon: IconUsers,
-    title: "Multi-Role",
-    desc: "Hak akses berbeda untuk admin pusat, operator provinsi, dan petugas lapangan.",
-  },
-];
+import { login } from "../lib/auth";
 
 export default function LandingPage() {
   const router = useRouter();
 
+  // Contact / Petunjuk modals
+  const [contactOpen, contactHandlers] = useDisclosure(false);
+  const [guideOpen, guideHandlers] = useDisclosure(false);
+
   // If the visitor is already authenticated, skip the marketing splash
-  // and head straight to the dashboard. Otherwise let them browse the
-  // landing page or sign in via the login CTA.
+  // and head straight to the dashboard.
   useEffect(() => {
     try {
       const raw = document.cookie
@@ -77,6 +69,9 @@ export default function LandingPage() {
       }
     } catch {}
   }, [router]);
+
+  const goToRegister = () => router.push("/pendaftaran");
+
   return (
     <Box
       style={{
@@ -86,7 +81,8 @@ export default function LandingPage() {
       }}
     >
       <Container size="xl" py="xl">
-        <Group justify="space-between" align="center" wrap="wrap" mb={60}>
+        {/* ===== Header ===== */}
+        <Group justify="space-between" align="center" wrap="wrap" mb={40}>
           <Group gap="sm">
             <Box
               style={{
@@ -113,23 +109,12 @@ export default function LandingPage() {
             </Box>
           </Group>
           <Group gap="sm">
-            <Button
-              variant="subtle"
-              color="dark"
-              onClick={() => router.push("/dashboard")}
-            >
-              Masuk Dasbor
-            </Button>
-            <Button
-              rightSection={<IconArrowRight size={14} />}
-              onClick={() => router.push("/pendaftaran")}
-            >
-              Daftar Sekarang
-            </Button>
+            {/* Header CTA buttons removed — see history. */}
           </Group>
         </Group>
 
-        <Grid gutter={60} align="center" mb={80}>
+        {/* ===== Hero: marketing copy + admin login form ===== */}
+        <Grid gutter={48} align="center" mb={32}>
           <Grid.Col span={{ base: 12, md: 7 }}>
             <Stack gap="lg">
               <Badge
@@ -158,22 +143,6 @@ export default function LandingPage() {
                 multi-langkah, verifikasi GPS, dokumentasi kondisi
                 kandang, dan integrasi dengan perusahaan kemitraan.
               </Text>
-              <Group gap="sm" wrap="wrap">
-                <Button
-                  size="md"
-                  rightSection={<IconArrowRight size={16} />}
-                  onClick={() => router.push("/pendaftaran")}
-                >
-                  Mulai Pendaftaran
-                </Button>
-                <Button
-                  size="md"
-                  variant="default"
-                  onClick={() => router.push("/dashboard")}
-                >
-                  Lihat Dasbor
-                </Button>
-              </Group>
 
               <Group gap="xl" mt="md" wrap="wrap">
                 <Stat label="Provinsi" value="38" />
@@ -184,113 +153,303 @@ export default function LandingPage() {
           </Grid.Col>
 
           <Grid.Col span={{ base: 12, md: 5 }}>
-            <HeroMockup />
+            <AdminLoginCard />
           </Grid.Col>
         </Grid>
 
-        <Box mb={40}>
-          <Stack gap="xs" mb="lg" align="center" ta="center">
+        {/* ===== CTA buttons row (below login form) ===== */}
+        <Paper
+          withBorder
+          radius="lg"
+          p="lg"
+          mb={60}
+          style={{
+            background: "rgba(255,255,255,0.6)",
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          <Stack gap="sm">
             <Text
               fz="xs"
               fw={700}
               tt="uppercase"
-              c="primary.7"
+              c="dimmed"
+              ta="center"
               style={{ letterSpacing: "0.1em" }}
             >
-              Fitur Unggulan
+              Pintasan Cepat
             </Text>
-            <Title order={2} fz={{ base: 26, md: 32 }}>
-              Dirancang untuk Petugas Lapangan
-            </Title>
-            <Text c="dimmed" maw={600}>
-              Setiap alur aplikasi dipertimbangkan dari sisi pengguna
-              di lapangan: input cepat, validasi otomatis, dan integrasi
-              data yang konsisten.
-            </Text>
-          </Stack>
-
-          <Grid gutter="md">
-            {FEATURES.map((f) => {
-              const Icon = f.icon;
-              return (
-                <Grid.Col key={f.title} span={{ base: 12, sm: 6, md: 4 }}>
-                  <Card padding="lg" radius="md" withBorder shadow="xs" h="100%">
-                    <Stack gap="sm">
-                      <ThemeIcon
-                        size={44}
-                        radius="md"
-                        variant="light"
-                        color="primary"
-                      >
-                        <Icon size={22} stroke={1.6} />
-                      </ThemeIcon>
-                      <Text fw={700} fz="md">
-                        {f.title}
-                      </Text>
-                      <Text fz="sm" c="dimmed" lh={1.55}>
-                        {f.desc}
-                      </Text>
-                    </Stack>
-                  </Card>
-                </Grid.Col>
-              );
-            })}
-          </Grid>
-        </Box>
-
-        <Box mt={60} mb={20}>
-          <Card
-            padding="xl"
-            radius="lg"
-            withBorder
-            style={{
-              background: "linear-gradient(135deg, #0f172a 0%, #1c2538 100%)",
-              borderColor: "transparent",
-            }}
-          >
-            <Group justify="space-between" align="center" wrap="wrap" gap="lg">
-              <Stack gap={4} style={{ flex: 1, minWidth: 280 }}>
-                <Text fz="xs" fw={700} tt="uppercase" c="primary.3" lts="0.08em">
-                  Mulai sekarang
-                </Text>
-                <Title order={3} c="white" fz={{ base: 22, md: 28 }}>
-                  Daftarkan peternak pertama Anda hari ini
-                </Title>
-                <Text c="slate.4" fz="sm" maw={520}>
-                  Formulir pendaftaran memandu Anda melalui 5 langkah:
-                  identitas, kandang, kondisi &amp; peralatan, status
-                  operasional, hingga review akhir.
-                </Text>
-              </Stack>
-              <Group gap="sm">
-                <Button
-                  size="md"
-                  color="primary"
-                  rightSection={<IconArrowRight size={16} />}
-                  onClick={() => router.push("/pendaftaran")}
-                >
-                  Buka Formulir
-                </Button>
-                <Button
-                  size="md"
-                  variant="outline"
-                  color="gray.4"
-                  onClick={() => router.push("/dashboard")}
-                >
-                  Ke Dasbor
-                </Button>
-              </Group>
+            <Group justify="center" gap="md" wrap="wrap">
+              <Button
+                size="md"
+                variant="light"
+                color="blue"
+                leftSection={<IconMessage size={16} />}
+                onClick={contactHandlers.open}
+              >
+                Contact Us
+              </Button>
+              <Button
+                size="md"
+                variant="light"
+                color="grape"
+                leftSection={<IconBook size={16} />}
+                onClick={guideHandlers.open}
+              >
+                Petunjuk Penggunaan
+              </Button>
+              <Button
+                size="md"
+                color="primary"
+                leftSection={<IconUserPlus size={16} />}
+                rightSection={<IconArrowRight size={14} />}
+                onClick={goToRegister}
+              >
+                Register Ternak Rakyat
+              </Button>
             </Group>
-          </Card>
-        </Box>
+          </Stack>
+        </Paper>
 
+        {/* ===== Footer ===== */}
         <Group justify="center" py="lg">
           <Text fz="xs" c="dimmed">
             © {new Date().getFullYear()} Arcson Development · Powered by SITERNAK
           </Text>
         </Group>
       </Container>
+
+      {/* ===== Contact Us modal ===== */}
+      <Modal
+        opened={contactOpen}
+        onClose={contactHandlers.close}
+        title={
+          <Group gap="xs">
+            <ThemeIcon variant="light" color="blue" radius="md">
+              <IconMessage size={18} />
+            </ThemeIcon>
+            <Text fw={700}>Hubungi Kami</Text>
+          </Group>
+        }
+        centered
+        size="md"
+      >
+        <Stack gap="md">
+          <Text fz="sm" c="dimmed" lh={1.55}>
+            Jika Anda menemukan kendala saat menggunakan aplikasi,
+            silakan hubungi tim pendukung melalui salah satu kanal di
+            bawah ini. Tim kami siap membantu pada jam kerja (Senin–Jumat,
+            08.00–17.00 WIB).
+          </Text>
+          <Stack gap="xs">
+            <ContactRow
+              icon={<IconMail size={18} />}
+              label="Email"
+              value="support@siternak.id"
+              href="mailto:support@siternak.id"
+            />
+            <ContactRow
+              icon={<IconPhone size={18} />}
+              label="Telepon / WhatsApp"
+              value="+62 21 1234 5678"
+              href="tel:+622112345678"
+            />
+            <ContactRow
+              icon={<IconMapPin size={18} />}
+              label="Kantor"
+              value="Arcson Development · Jakarta, Indonesia"
+            />
+          </Stack>
+          <Alert variant="light" color="blue" icon={<IconShieldCheck size={16} />}>
+            <Text fz="sm">
+              <b>Catatan:</b> Akun admin hanya dapat dibuat oleh
+              administrator pusat. Hubungi kami jika Anda belum memiliki
+              kredensial.
+            </Text>
+          </Alert>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={contactHandlers.close}>
+              Tutup
+            </Button>
+            <Button
+              component="a"
+              href="mailto:support@siternak.id"
+              leftSection={<IconMail size={14} />}
+            >
+              Kirim Email
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* ===== Petunjuk Penggunaan modal ===== */}
+      <Modal
+        opened={guideOpen}
+        onClose={guideHandlers.close}
+        title={
+          <Group gap="xs">
+            <ThemeIcon variant="light" color="grape" radius="md">
+              <IconBook size={18} />
+            </ThemeIcon>
+            <Text fw={700}>Petunjuk Penggunaan</Text>
+          </Group>
+        }
+        centered
+        size="lg"
+        scrollAreaComponent={ScrollArea.Autosize}
+      >
+        <Stack gap="md">
+          <Text fz="sm" c="dimmed" lh={1.55}>
+            Ikuti 5 langkah sederhana berikut untuk mendaftarkan
+            peternak baru. Pastikan Anda telah menyiapkan foto KTP
+            pemilik dan foto-foto kondisi kandang (dinding, atap,
+            lantai, tempat makan, tempat minum, brooding, kipas).
+          </Text>
+          <Divider />
+          <GuideStep
+            icon={<IconCircleNumber1 size={28} />}
+            color="primary"
+            title="Login sebagai Admin"
+            body="Gunakan akun admin pada formulir di atas untuk masuk ke dasbor. Akun default: admin / admin123 (mode demo)."
+          />
+          <GuideStep
+            icon={<IconCircleNumber2 size={28} />}
+            color="blue"
+            title="Klik 'Register Ternak Rakyat'"
+            body="Tombol ini mengarahkan Anda ke halaman pendaftaran. Halaman akan otomatis melakukan login internal untuk membuka akses submit form ke server."
+          />
+          <GuideStep
+            icon={<IconCircleNumber3 size={28} />}
+            color="grape"
+            title="Isi Identitas Peternak"
+            body="Lengkapi nama, NIK, foto KTP, kategori (pedaging/petelur), dan alamat domisili lengkap (provinsi, kabupaten, kecamatan, kelurahan)."
+          />
+          <GuideStep
+            icon={<IconCircleNumber4 size={28} />}
+            color="orange"
+            title="Lengkapi Data Kandang"
+            body="Tambahkan satu atau lebih kandang. Setiap kandang memerlukan koordinat GPS (klik peta), kapasitas, kondisi dinding/atap/lantai, peralatan, dan status operasional."
+          />
+          <GuideStep
+            icon={<IconCircleNumber5 size={28} />}
+            color="green"
+            title="Review & Submit"
+            body="Periksa ulang ringkasan data pada langkah Review. Klik 'Simpan Pendaftaran' untuk mengirim data ke server. Data akan tampil di daftar peternak setelah berhasil."
+          />
+          <Alert variant="light" color="grape" icon={<IconShieldCheck size={16} />}>
+            <Text fz="sm">
+              <b>Tips:</b> Siapkan foto dengan pencahayaan cukup dan
+              posisi rapi sebelum mengunggah. Format yang didukung:
+              JPG, PNG, WebP.
+            </Text>
+          </Alert>
+          <Group justify="flex-end">
+            <Button onClick={guideHandlers.close}>Mengerti</Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Box>
+  );
+}
+
+// =============================================================================
+// Subcomponents
+// =============================================================================
+
+function AdminLoginCard() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  const form = useForm({
+    initialValues: { username: "", password: "", remember: true },
+    validate: {
+      username: (v: string) => (v.trim().length === 0 ? "Username wajib diisi" : null),
+      password: (v: string) => (v.length < 6 ? "Minimal 6 karakter" : null),
+    },
+  });
+
+  const handleSubmit = async (values: typeof form.values) => {
+    setAuthError(null);
+    setLoading(true);
+    try {
+      const user = await login(values.username, values.password);
+      notifications.show({
+        title: "Selamat datang",
+        message: `Login berhasil sebagai ${user.name}`,
+        color: "green",
+        icon: <IconCheck size={16} />,
+      });
+      router.push("/dashboard");
+    } catch (err: any) {
+      setAuthError(err?.message ?? "Username atau password salah");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card padding="xl" radius="lg" withBorder shadow="md">
+      <Stack gap="md">
+        <Stack gap={2}>
+          <Title order={3} fw={700}>
+            Login Admin
+          </Title>
+          <Text fz="sm" c="dimmed">
+            Masuk untuk mengelola data peternak.
+          </Text>
+        </Stack>
+
+        {authError && (
+          <Alert color="red" variant="light" icon={<IconShieldCheck size={16} />}>
+            {authError}
+          </Alert>
+        )}
+
+        <form onSubmit={form.onSubmit(handleSubmit)}>
+          <Stack gap="sm">
+            <TextInput
+              label="Username"
+              placeholder="admin"
+              leftSection={<IconUserCircle size={16} />}
+              size="md"
+              {...form.getInputProps("username")}
+            />
+            <PasswordInput
+              label="Kata Sandi"
+              placeholder="••••••"
+              leftSection={<IconLockSquare size={16} />}
+              size="md"
+              {...form.getInputProps("password")}
+            />
+            <Group justify="space-between">
+              <Checkbox
+                label="Ingat saya"
+                size="sm"
+                {...form.getInputProps("remember", { type: "checkbox" })}
+              />
+              <Anchor size="sm" c="primary.7" href="#">
+                Lupa kata sandi?
+              </Anchor>
+            </Group>
+            <Button
+              type="submit"
+              fullWidth
+              size="md"
+              loading={loading}
+              loaderProps={{ type: "dots" }}
+              leftSection={<IconShieldCheck size={16} />}
+            >
+              Masuk
+            </Button>
+          </Stack>
+        </form>
+
+        <Text fz="xs" c="dimmed" ta="center">
+          Default demo: <b>admin</b> / <b>admin123</b>
+        </Text>
+      </Stack>
+    </Card>
   );
 }
 
@@ -314,59 +473,65 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
   );
 }
 
-function HeroMockup() {
+function ContactRow({
+  icon,
+  label,
+  value,
+  href,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  href?: string;
+}) {
+  const content = (
+    <Group gap="sm" align="flex-start" wrap="nowrap">
+      <ThemeIcon variant="light" color="blue" radius="md">
+        {icon}
+      </ThemeIcon>
+      <Stack gap={0}>
+        <Text fz="xs" c="dimmed" fw={600} tt="uppercase" lts="0.04em">
+          {label}
+        </Text>
+        <Text fz="sm" fw={600}>
+          {value}
+        </Text>
+      </Stack>
+    </Group>
+  );
+  return href ? (
+    <Anchor href={href} underline="never" c="inherit">
+      {content}
+    </Anchor>
+  ) : (
+    content
+  );
+}
+
+function GuideStep({
+  icon,
+  color,
+  title,
+  body,
+}: {
+  icon: React.ReactNode;
+  color: string;
+  title: string;
+  body: string;
+}) {
   return (
-    <Card
-      padding={0}
-      radius="lg"
-      withBorder
-      shadow="lg"
-      style={{ overflow: "hidden" }}
-    >
-      <Box
-        p={6}
-        style={{ background: "var(--app-surface-sunken)", borderBottom: "1px solid var(--app-border)" }}
-      >
-        <Group gap={6}>
-          <Box w={10} h={10} bg="red.4" style={{ borderRadius: 999 }} />
-          <Box w={10} h={10} bg="yellow.4" style={{ borderRadius: 999 }} />
-          <Box w={10} h={10} bg="green.4" style={{ borderRadius: 999 }} />
-        </Group>
-      </Box>
-      <Box p="lg" bg="var(--app-surface)">
-        <Stack gap="sm">
-          <Group gap={4}>
-            <Text fz="xs" fw={700} tt="uppercase" c="dimmed" lts="0.06em">
-              Formulir Pendaftaran
-            </Text>
-          </Group>
-          <Text fz="md" fw={700}>
-            Kandang Utama · Lokasi &amp; Kapasitas
-          </Text>
-          <Group gap="xs">
-            {["Identitas", "Kandang", "Kondisi", "Operasional", "Review"].map((s, i) => (
-              <Box
-                key={s}
-                style={{
-                  flex: 1,
-                  height: 4,
-                  borderRadius: 2,
-                  background: i <= 1 ? "var(--app-primary)" : "var(--app-surface-sunken)",
-                }}
-              />
-            ))}
-          </Group>
-          <Group gap="xs" mt="xs">
-            <Box flex={1} h={36} bg="var(--app-surface-sunken)" style={{ borderRadius: 6 }} />
-            <Box flex={1} h={36} bg="var(--app-surface-sunken)" style={{ borderRadius: 6 }} />
-          </Group>
-          <Box h={80} bg="var(--app-surface-sunken)" style={{ borderRadius: 6 }} />
-          <Group gap="xs">
-            <Box flex={1} h={36} bg="var(--app-primary-soft)" style={{ borderRadius: 6 }} />
-            <Box flex={1} h={36} bg="var(--app-primary)" style={{ borderRadius: 6 }} />
-          </Group>
-        </Stack>
-      </Box>
-    </Card>
+    <Group gap="sm" align="flex-start" wrap="nowrap">
+      <ThemeIcon variant="light" color={color} size={44} radius="md">
+        {icon}
+      </ThemeIcon>
+      <Stack gap={2} style={{ flex: 1 }}>
+        <Text fz="sm" fw={700}>
+          {title}
+        </Text>
+        <Text fz="sm" c="dimmed" lh={1.5}>
+          {body}
+        </Text>
+      </Stack>
+    </Group>
   );
 }

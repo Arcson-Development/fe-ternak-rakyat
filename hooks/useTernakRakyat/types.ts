@@ -30,6 +30,12 @@ export interface PhotoRef {
   name?: string;
   /** File size in bytes, for the small caption under the thumbnail. */
   size?: number;
+  /**
+   * The actual File object captured from the dropzone. Not persisted to
+   * localStorage (File is not serializable) — it's only kept in memory
+   * long enough for the wizard to submit the form via multipart/form-data.
+   */
+  file?: File;
 }
 
 export interface KondisiKandang {
@@ -196,3 +202,48 @@ export const emptyPeternak = (): Peternak => ({
   kategori: "",
   kandang: [],
 });
+
+// =============================================================================
+// API value maps — convert internal enum keys to the display strings the
+// backend expects (matches the Postman collection for /form/create).
+// =============================================================================
+
+/** Map internal enum → Postman display string. */
+export const KAPASITAS_DISPLAY: Record<KapasitasKandang | "", string> = {
+  "": "",
+  "<2500": "< 2500",
+  "2500-5000": "2500 - 5000",
+  ">5000": "> 5000",
+};
+
+export const KONDISI_DISPLAY: Record<Kondisi | "", string> = {
+  "": "",
+  baik: "Baik",
+  sedang: "Sedang",
+  rusak: "Rusak",
+};
+
+export const KATEGORI_DISPLAY: Record<KategoriPeternak | "", string> = {
+  "": "",
+  ayam_pedaging: "Ayam Pedaging",
+  ayam_petelur: "Ayam Petelur",
+};
+
+export const JENIS_USAHA_DISPLAY: Record<JenisUsaha | "", string> = {
+  "": "",
+  mandiri: "Mandiri",
+  kemitraan: "Kemitraan",
+};
+
+export const KEMITRAAN_DISPLAY: Record<Kemitraan | "", string> = {
+  "": "",
+  charoen_phokphan: "Charoen Phokphan",
+  japfa_comfeed: "Japfa Comfeed",
+  ciomas_adistawa: "Ciomas Adistawa",
+  sierad: "Sierad",
+  malindo_feedmill: "Malindo Feedmill",
+  mitra_mahkita: "Mitra Mahkita",
+  sreeya_sewu: "Sreeya Sewu",
+  mitra_mahkota_buana: "Mitra Mahkota Buana",
+  super_unggas_jaya: "Super Unggas Jaya",
+};

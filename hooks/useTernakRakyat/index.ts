@@ -9,7 +9,8 @@ import {
 } from "./data/regions";
 import { useTernakStore } from "./store/ternakStore";
 import { DOMAIN_API } from "../../utils/contants/env";
-import { createPeternak, toApiError } from "../../lib/api";
+import { createPeternak, submitForm, toApiError } from "../../lib/api";
+import { ensurePeternakToken } from "../../lib/auth/peternakAuth";
 import type { Peternak } from "./types";
 
 /**
@@ -72,13 +73,19 @@ export function useKelurahan(
 }
 
 /**
- * Submission hook with feature-flag routing.
+ * Submission hook for the registration wizard.
  *
- *   - When NEXT_PUBLIC_DOMAIN_API is set → POST to /peternak
- *   - Otherwise → persist to local Zustand store (mock mode)
+ * Flow:
+ *   1. Resolve a bearer token (cached or freshly obtained from
+ *      /auth/peternak/sign-in via hardcodedPeternakLogin).
+ *   2. POST the payload to /form/create as multipart/form-data with the
+ *      field names documented in the Postman collection.
+ *   3. Mirror the saved record into the local Zustand store so the
+ *      dashboard list / detail screens can render the entry without
+ *      an extra round-trip.
  *
- * Both branches return the saved record so the wizard can navigate to a
- * confirmation page or print detail.
+ * The legacy /peternak endpoint and the in-memory mock are kept as a
+ * fallback when no API is configured (NEXT_PUBLIC_DOMAIN_API is empty).
  */
 export function useSubmitPeternak() {
   const add = useTernakStore((s) => s.add);
@@ -86,15 +93,8 @@ export function useSubmitPeternak() {
     mutationFn: async (data: Peternak): Promise<Peternak> => {
       if (USE_REAL_API) {
         try {
-          const saved = await createPeternak({
-            nama: data.nama,
-            noKtp: data.noKtp,
-            ktp: data.ktp,
-            alamat: data.alamat,
-            kategori: data.kategori,
-            kandang: data.kandang,
-          });
-          // Mirror to local store so the dashboard works offline
+          const token = await ensurePeternakToken();
+          const saved = await submitForm(data, token);
           add(saved);
           return saved;
         } catch (err) {
@@ -102,15 +102,23 @@ export function useSubmitPeternak() {
           throw new Error(e.message);
         }
       }
-      // Mock path
-      await new Promise((r) => setTimeout(r, 700));
-      const stored: Peternak = {
-        ...data,
-        id: data.id || `pt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        createdAt: data.createdAt || new Date().toISOString(),
-      };
-      add(stored);
-      return stored;
+
+      // Legacy /peternak endpoint (kept for backwards compatibility)
+      try {
+        const saved = await createPeternak({
+          nama: data.nama,
+          noKtp: data.noKtp,
+          ktp: data.ktp,
+          alamat: data.alamat,
+          kategori: data.kategori,
+          kandang: data.kandang,
+        });
+        add(saved);
+        return saved;
+      } catch (err) {
+        const e = toApiError(err);
+        throw new Error(e.message);
+      }
     },
   });
 }

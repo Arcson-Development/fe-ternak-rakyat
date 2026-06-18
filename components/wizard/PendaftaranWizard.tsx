@@ -214,16 +214,18 @@ export function PendaftaranWizard({ initialValue, modeKey = "new" }: Props) {
         clear();
         notifications.show({
           title: "Pendaftaran Tersimpan",
-          message: `Data ${finalPayload.nama} berhasil didaftarkan.`,
+          message: `Data ${finalPayload.nama} berhasil dikirim ke server.`,
           color: "green",
           icon: <IconCheck size={18} />,
         });
         route.push("/dashboard/peternak");
       },
-      onError: () => {
+      onError: (err: any) => {
         notifications.show({
           title: "Gagal menyimpan",
-          message: "Terjadi kesalahan saat menyimpan data. Coba lagi.",
+          message:
+            err?.message ||
+            "Terjadi kesalahan saat mengirim data ke server. Coba lagi.",
           color: "red",
         });
       },

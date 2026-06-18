@@ -46,7 +46,7 @@ export function FileUploadCard({
     const f = files[0];
     if (!f) return;
     const preview = URL.createObjectURL(f);
-    onChange({ preview, name: f.name, size: f.size });
+    onChange({ preview, name: f.name, size: f.size, file: f });
   };
 
   const handleRemove = () => {

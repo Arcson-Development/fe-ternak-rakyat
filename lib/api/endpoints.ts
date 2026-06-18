@@ -1,8 +1,16 @@
 "use client";
 
+import axios from "axios";
+import { DOMAIN_API } from "../../utils/contants/env";
 import { api, toApiError } from "./client";
+import { clearPeternakToken } from "../auth/peternakAuth";
 import {
   DAFTAR_KEMITRAAN,
+  JENIS_USAHA_DISPLAY,
+  KAPASITAS_DISPLAY,
+  KATEGORI_DISPLAY,
+  KEMITRAAN_DISPLAY,
+  KONDISI_DISPLAY,
   type Peternak,
   type RegionRef,
 } from "../../hooks/useTernakRakyat";
@@ -97,4 +105,97 @@ export async function fetchPeternakById(id: string): Promise<Peternak | null> {
 
 export async function deletePeternak(id: string): Promise<void> {
   await api.delete(`/peternak/${id}`);
+}
+
+// =============================================================================
+// /form/create — multipart/form-data submission matching the Postman
+// collection. Field names below mirror the body of the "Create Form"
+// request in "Ternak Rakyat.postman_collection.json".
+// =============================================================================
+
+/**
+ * Append a file field to FormData when the user actually attached one.
+ * Skips silently when missing so the server's validation layer can
+ * decide whether the field is required.
+ */
+function appendFile(fd: FormData, key: string, ref?: { file?: File | null }) {
+  if (ref?.file) fd.append(key, ref.file, ref.file.name);
+}
+
+/**
+ * Submit the wizard payload to POST /form/create. The endpoint expects:
+ *   - multipart/form-data
+ *   - Authorization header set to the bearer token obtained from
+ *     /auth/peternak/sign-in (see lib/auth/peternakAuth.ts).
+ *
+ * Internal enum values (e.g. `ayam_pedaging`, `baik`) are translated to
+ * the display strings the backend expects ("Ayam Pedaging", "Baik") via
+ * the *_DISPLAY maps in useTernakRakyat/types.
+ */
+export async function submitForm(
+  payload: Peternak,
+  token: string
+): Promise<Peternak> {
+  const fd = new FormData();
+
+  // --- identitas ---
+  fd.append("nama", payload.nama ?? "");
+  fd.append("provinsi_id", payload.alamat.provinsi?.id ?? "");
+  fd.append("kabupaten_id", payload.alamat.kabupaten?.id ?? "");
+  fd.append("kecamatan_id", payload.alamat.kecamatan?.id ?? "");
+  fd.append("kelurahan_id", payload.alamat.kelurahan?.id ?? "");
+  fd.append("alamat", payload.alamat.detail ?? "");
+  fd.append("ktp_no", payload.noKtp ?? "");
+  appendFile(fd, "ktp_foto", payload.ktp);
+  fd.append("kategori_peternak", KATEGORI_DISPLAY[payload.kategori] ?? "");
+
+  // --- kandang (repeatable) ---
+  payload.kandang.forEach((k, i) => {
+    const prefix = `kandang[${i}]`;
+    fd.append(`${prefix}[latitude]`, k.lokasi.lat !== null ? String(k.lokasi.lat) : "");
+    fd.append(`${prefix}[longitude]`, k.lokasi.lng !== null ? String(k.lokasi.lng) : "");
+    fd.append(`${prefix}[kapasitas]`, KAPASITAS_DISPLAY[k.kapasitas] ?? "");
+    fd.append(`${prefix}[dinding]`, KONDISI_DISPLAY[k.kondisi.dinding.kondisi] ?? "");
+    appendFile(fd, `${prefix}[dinding_foto]`, k.kondisi.dinding.foto);
+    fd.append(`${prefix}[lantai]`, KONDISI_DISPLAY[k.kondisi.lantai.kondisi] ?? "");
+    appendFile(fd, `${prefix}[lantai_foto]`, k.kondisi.lantai.foto);
+    fd.append(`${prefix}[atap]`, KONDISI_DISPLAY[k.kondisi.atap.kondisi] ?? "");
+    appendFile(fd, `${prefix}[atap_foto]`, k.kondisi.atap.foto);
+    fd.append(`${prefix}[tmp_mkn]`, KONDISI_DISPLAY[k.peralatan.tempatMakan.kondisi] ?? "");
+    appendFile(fd, `${prefix}[tmp_mkn_foto]`, k.peralatan.tempatMakan.foto);
+    fd.append(`${prefix}[tmp_mnm]`, KONDISI_DISPLAY[k.peralatan.tempatMinum.kondisi] ?? "");
+    appendFile(fd, `${prefix}[tmp_mnm_foto]`, k.peralatan.tempatMinum.foto);
+    fd.append(`${prefix}[brooding]`, KONDISI_DISPLAY[k.peralatan.brooding.kondisi] ?? "");
+    appendFile(fd, `${prefix}[brooding_foto]`, k.peralatan.brooding.foto);
+    fd.append(`${prefix}[kipas]`, KONDISI_DISPLAY[k.peralatan.kipas.kondisi] ?? "");
+    appendFile(fd, `${prefix}[kipas_foto]`, k.peralatan.kipas.foto);
+    fd.append(`${prefix}[is_operating]`, k.statusOperasional === "operasi" ? "true" : "false");
+    fd.append(`${prefix}[jml_ayam]`, KAPASITAS_DISPLAY[k.jumlahAyam] ?? "");
+    fd.append(`${prefix}[jenis_usaha]`, JENIS_USAHA_DISPLAY[k.jenisUsaha] ?? "");
+    fd.append(`${prefix}[jenis_kemitraan]`, KEMITRAAN_DISPLAY[k.kemitraan] ?? "");
+  });
+
+  try {
+    // Use a raw axios instance (NOT the shared `api` client) so that:
+    //   1. The admin Bearer token from localStorage is NOT auto-attached
+    //      (the petenak role uses a different token format).
+    //   2. The response interceptor doesn't log the admin out when the
+    //      petenak token is rejected — they're independent sessions.
+    const { data } = await axios.post<{ data: Peternak }>(
+      `${DOMAIN_API}/form/create`,
+      fd,
+      {
+        headers: { Authorization: token },
+        timeout: 60_000, // multipart with photos can be slow
+      }
+    );
+    return data.data;
+  } catch (err: any) {
+    // Token rejected (401) — clear the cached petenak token so the
+    // caller's next attempt re-auths instead of looping forever.
+    if (err?.response?.status === 401) {
+      clearPeternakToken();
+    }
+    throw toApiError(err);
+  }
 }

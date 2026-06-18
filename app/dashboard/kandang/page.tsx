@@ -47,119 +47,20 @@ type Row = {
 };
 
 function KandangListPageContent() {
+  // ─── Rules of Hooks: ALL hooks must be called before any early return ───
+  // Skeleton gate (briefly hidden until store hydrates from localStorage)
   const [ready, setReady] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 200);
     return () => clearTimeout(t);
   }, []);
-  if (!ready) return <ListSkeleton />;
+
   const router = useRouter();
   const list = usePeternakList();
   const removeMany = useTernakStore((s) => s.removeMany);
+  const updateKandang = useTernakStore((s) => s.update);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [confirmBulkDel, setConfirmBulkDel] = useState(false);
-
-
-
-  const handleBulkDeleteKandang = () => {
-    if (selectedKeys.size === 0) return;
-    try {
-      // Remove all selected kandangs from their respective peternak
-      const useStore = useTernakStore.getState();
-      const groupById = new Map<string, typeof filtered>();
-      filtered.forEach((r) => {
-        if (selectedKeys.has(`${r.peternak.id}|${r.kandang.lokasi.alamat || ""}`)) {
-          const key = r.peternak.id;
-          if (!groupById.has(key)) groupById.set(key, [] as any);
-          (groupById.get(key) as any).push(r);
-        }
-      });
-      // We can't easily remove a single kandang from a nested array via existing store API
-      // So we'll remove the entire peternak if all their kandangs are selected
-      // OR just delete the entire peternak record (simpler)
-      let count = 0;
-      groupById.forEach((rows, peternakId) => {
-        const p = useStore.peternak.find((x) => x.id === peternakId);
-        if (p) {
-          // Remove the selected kandangs
-          const remainingKandang = p.kandang.filter(
-            (k) => !rows.some((r: any) => r.kandang === k)
-          );
-          if (remainingKandang.length === 0) {
-            // No more kandangs, remove the whole record
-            useStore.remove(peternakId);
-            count++;
-          } else {
-            // Patch the record with remaining kandangs
-            useStore.update(peternakId, { kandang: remainingKandang });
-            count++;
-          }
-        }
-      });
-      notifications.show({
-        title: "Berhasil dihapus",
-        message: `${count} data kandang telah dihapus.`,
-        color: "green",
-      });
-      clearSelectionKandang();
-    } catch {
-      notifications.show({
-        title: "Gagal menghapus",
-        message: "Terjadi kesalahan saat menghapus data.",
-        color: "red",
-      });
-    } finally {
-      setConfirmBulkDel(false);
-    }
-  };
-
-  const handleBulkExportKandang = () => {
-    const rows = filtered.filter((r) => selectedKeys.has(`${r.peternak.id}|${r.kandang.lokasi.alamat || ""}`));
-    if (rows.length === 0) return;
-    try {
-      const wb = buildKandangWorkbook(rows);
-      downloadWorkbook(wb, `siternak-kandang-terpilih-${TIMESTAMP()}.xlsx`);
-      notifications.show({
-        title: "Berhasil diekspor",
-        message: `${rows.length} data kandang dipilih diekspor.`,
-        color: "green",
-        icon: <IconFileSpreadsheet size={18} />,
-      });
-    } catch {
-      notifications.show({
-        title: "Gagal mengekspor",
-        message: "Terjadi kesalahan saat membuat file Excel.",
-        color: "red",
-      });
-    }
-  };
-  const handleExportExcel = (rows: Row[]) => {
-    if (rows.length === 0) {
-      notifications.show({
-        title: "Tidak ada data",
-        message: "Tidak ada data untuk diekspor.",
-        color: "yellow",
-      });
-      return;
-    }
-    try {
-      const wb = buildKandangWorkbook(rows);
-      downloadWorkbook(wb, `siternak-master-kandang-${TIMESTAMP()}.xlsx`);
-      notifications.show({
-        title: "Berhasil diekspor",
-        message: `${rows.length} data kandang disimpan ke Excel.`,
-        color: "green",
-        icon: <IconFileSpreadsheet size={18} />,
-      });
-    } catch {
-      notifications.show({
-        title: "Gagal mengekspor",
-        message: "Terjadi kesalahan saat membuat file Excel.",
-        color: "red",
-      });
-    }
-  };
-  const updateKandang = useTernakStore((s) => s.update);
   const [confirmDel, setConfirmDel] = useState<Row | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>("all");
@@ -209,8 +110,116 @@ function KandangListPageContent() {
     () => new Set(filtered.map((r) => `${r.peternak.id}|${r.kandang.lokasi.alamat || ""}`)),
     [filtered]
   );
-  const allFilteredSelected = filtered.length > 0 && filtered.every((r) => selectedKeys.has(`${r.peternak.id}|${r.kandang.lokasi.alamat || ""}`));
-  const someFilteredSelected = filtered.some((r) => selectedKeys.has(`${r.peternak.id}|${r.kandang.lokasi.alamat || ""}`));
+
+  // ─── Early return AFTER all hooks (safe to skip rendering body) ───
+  if (!ready) return <ListSkeleton />;
+
+  // ─── Derived state (no hooks) ───
+  const allFilteredSelected =
+    filtered.length > 0 &&
+    filtered.every((r) => selectedKeys.has(`${r.peternak.id}|${r.kandang.lokasi.alamat || ""}`));
+  const someFilteredSelected = filtered.some(
+    (r) => selectedKeys.has(`${r.peternak.id}|${r.kandang.lokasi.alamat || ""}`)
+  );
+
+  // ─── Action handlers (no hooks, just closures over state) ───
+  const handleBulkDeleteKandang = () => {
+    if (selectedKeys.size === 0) return;
+    try {
+      // Remove all selected kandangs from their respective peternak
+      const useStore = useTernakStore.getState();
+      const groupById = new Map<string, typeof filtered>();
+      filtered.forEach((r) => {
+        if (selectedKeys.has(`${r.peternak.id}|${r.kandang.lokasi.alamat || ""}`)) {
+          const key = r.peternak.id;
+          if (!groupById.has(key)) groupById.set(key, [] as any);
+          (groupById.get(key) as any).push(r);
+        }
+      });
+      // If a peternak has all of its kandangs selected we remove the whole
+      // record; otherwise we patch with the remaining kandangs.
+      let count = 0;
+      groupById.forEach((rows, peternakId) => {
+        const p = useStore.peternak.find((x) => x.id === peternakId);
+        if (p) {
+          const remainingKandang = p.kandang.filter(
+            (k) => !rows.some((r: any) => r.kandang === k)
+          );
+          if (remainingKandang.length === 0) {
+            useStore.remove(peternakId);
+            count++;
+          } else {
+            useStore.update(peternakId, { kandang: remainingKandang });
+            count++;
+          }
+        }
+      });
+      notifications.show({
+        title: "Berhasil dihapus",
+        message: `${count} data kandang telah dihapus.`,
+        color: "green",
+      });
+      clearSelectionKandang();
+    } catch {
+      notifications.show({
+        title: "Gagal menghapus",
+        message: "Terjadi kesalahan saat menghapus data.",
+        color: "red",
+      });
+    } finally {
+      setConfirmBulkDel(false);
+    }
+  };
+
+  const handleBulkExportKandang = () => {
+    const rows = filtered.filter((r) =>
+      selectedKeys.has(`${r.peternak.id}|${r.kandang.lokasi.alamat || ""}`)
+    );
+    if (rows.length === 0) return;
+    try {
+      const wb = buildKandangWorkbook(rows);
+      downloadWorkbook(wb, `siternak-kandang-terpilih-${TIMESTAMP()}.xlsx`);
+      notifications.show({
+        title: "Berhasil diekspor",
+        message: `${rows.length} data kandang dipilih diekspor.`,
+        color: "green",
+        icon: <IconFileSpreadsheet size={18} />,
+      });
+    } catch {
+      notifications.show({
+        title: "Gagal mengekspor",
+        message: "Terjadi kesalahan saat membuat file Excel.",
+        color: "red",
+      });
+    }
+  };
+
+  const handleExportExcel = (rows: Row[]) => {
+    if (rows.length === 0) {
+      notifications.show({
+        title: "Tidak ada data",
+        message: "Tidak ada data untuk diekspor.",
+        color: "yellow",
+      });
+      return;
+    }
+    try {
+      const wb = buildKandangWorkbook(rows);
+      downloadWorkbook(wb, `siternak-master-kandang-${TIMESTAMP()}.xlsx`);
+      notifications.show({
+        title: "Berhasil diekspor",
+        message: `${rows.length} data kandang disimpan ke Excel.`,
+        color: "green",
+        icon: <IconFileSpreadsheet size={18} />,
+      });
+    } catch {
+      notifications.show({
+        title: "Gagal mengekspor",
+        message: "Terjadi kesalahan saat membuat file Excel.",
+        color: "red",
+      });
+    }
+  };
 
   const toggleOneKandang = (key: string) => {
     setSelectedKeys((prev) => {
@@ -220,6 +229,7 @@ function KandangListPageContent() {
       return next;
     });
   };
+
   const toggleAllFilteredKandang = () => {
     setSelectedKeys((prev) => {
       if (allFilteredSelected) {
@@ -232,6 +242,7 @@ function KandangListPageContent() {
       return next;
     });
   };
+
   const clearSelectionKandang = () => setSelectedKeys(new Set());
 
   return (
