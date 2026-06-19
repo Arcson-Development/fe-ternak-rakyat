@@ -29,7 +29,9 @@ import {
   KATEGORI_LABEL,
   kemitraanLabel,
   type KategoriPeternak,
+  type Kondisi,
   type Kandang,
+  type PhotoRef,
 } from "../../hooks/useTernakRakyat";
 import type { RegionRef } from "../../hooks/useTernakRakyat";
 
@@ -168,9 +170,21 @@ export function StepReview({ identitas, kandangList, onJumpTo }: Props) {
                 Kondisi Fisik
               </Text>
               <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
-                <MiniField label="Dinding" value={k.kondisi.dinding.kondisi} />
-                <MiniField label="Atap" value={k.kondisi.atap.kondisi} />
-                <MiniField label="Lantai" value={k.kondisi.lantai.kondisi} />
+                <PhotoMiniField
+                  label="Dinding"
+                  kondisi={k.kondisi.dinding.kondisi}
+                  photo={k.kondisi.dinding.foto}
+                />
+                <PhotoMiniField
+                  label="Atap"
+                  kondisi={k.kondisi.atap.kondisi}
+                  photo={k.kondisi.atap.foto}
+                />
+                <PhotoMiniField
+                  label="Lantai"
+                  kondisi={k.kondisi.lantai.kondisi}
+                  photo={k.kondisi.lantai.foto}
+                />
               </SimpleGrid>
             </Box>
 
@@ -181,10 +195,26 @@ export function StepReview({ identitas, kandangList, onJumpTo }: Props) {
                 Peralatan
               </Text>
               <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-                <MiniField label="Tempat Minum" value={k.peralatan.tempatMinum.kondisi} />
-                <MiniField label="Tempat Makan" value={k.peralatan.tempatMakan.kondisi} />
-                <MiniField label="Brooding / Pemanas" value={k.peralatan.brooding.kondisi} />
-                <MiniField label="Kipas / Ventilasi" value={k.peralatan.kipas.kondisi} />
+                <PhotoMiniField
+                  label="Tempat Minum"
+                  kondisi={k.peralatan.tempatMinum.kondisi}
+                  photo={k.peralatan.tempatMinum.foto}
+                />
+                <PhotoMiniField
+                  label="Tempat Makan"
+                  kondisi={k.peralatan.tempatMakan.kondisi}
+                  photo={k.peralatan.tempatMakan.foto}
+                />
+                <PhotoMiniField
+                  label="Brooding / Pemanas"
+                  kondisi={k.peralatan.brooding.kondisi}
+                  photo={k.peralatan.brooding.foto}
+                />
+                <PhotoMiniField
+                  label="Kipas / Ventilasi"
+                  kondisi={k.peralatan.kipas.kondisi}
+                  photo={k.peralatan.kipas.foto}
+                />
               </SimpleGrid>
             </Box>
 
@@ -264,20 +294,80 @@ function Field({ label, value, mono }: { label: string; value: string; mono?: bo
   );
 }
 
-function MiniField({ label, value }: { label: string; value: string }) {
+/**
+ * Compact card for a kondisi / peralatan field: kondisi badge on top,
+ * photo thumbnail below, inline. If no photo was uploaded, falls back
+ * to a dashed placeholder so the user can still see the slot existed.
+ */
+function PhotoMiniField({
+  label,
+  kondisi,
+  photo,
+}: {
+  label: string;
+  kondisi: Kondisi | "";
+  photo: PhotoRef;
+}) {
   return (
     <Card
       withBorder
-      padding="xs"
+      padding="sm"
       radius="md"
       style={{ background: "var(--app-surface)" }}
     >
-      <Group justify="space-between" align="center">
-        <Text fz="xs" c="dimmed" fw={500}>
-          {label}
-        </Text>
-        <StatusBadge variant="kondisi" value={value as any} />
-      </Group>
+      <Stack gap={8}>
+        <Group justify="space-between" align="center">
+          <Text fz="xs" c="dimmed" fw={600}>
+            {label}
+          </Text>
+          <StatusBadge variant="kondisi" value={kondisi as any} />
+        </Group>
+        {photo.preview ? (
+          <Box
+            style={{
+              width: "100%",
+              aspectRatio: "4 / 3",
+              borderRadius: 6,
+              overflow: "hidden",
+              border: "1px solid var(--app-border)",
+              background: "var(--app-surface-sunken)",
+            }}
+          >
+            <img
+              src={photo.preview}
+              alt={label}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+          </Box>
+        ) : (
+          <Box
+            style={{
+              width: "100%",
+              aspectRatio: "4 / 3",
+              borderRadius: 6,
+              border: "1px dashed var(--app-border)",
+              background: "var(--app-surface-sunken)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text fz="xs" c="dimmed">
+              Tidak ada foto
+            </Text>
+          </Box>
+        )}
+        {photo.name ? (
+          <Text fz="xs" c="dimmed" lineClamp={1} title={photo.name}>
+            {photo.name}
+          </Text>
+        ) : null}
+      </Stack>
     </Card>
   );
 }
