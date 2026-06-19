@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import type { Peternak, PhotoRef } from "./types";
+import {
+  emptyPeternak,
+  type Peternak,
+  type PhotoRef,
+} from "./types";
 import {
   getPhoto,
   putPhoto,
@@ -288,6 +292,18 @@ export function useWizardDraft(
       const orphanIds = collectPhotoIds(existing.payload);
       deletePhotos(orphanIds).catch(() => {});
     }
+    // Block any pending or future autosave. Without this, a debounced
+    // setTimeout that was scheduled before clear() (e.g. user typed in
+    // a field then hit Submit quickly) would fire AFTER clear() and
+    // resurrect the just-deleted draft with the payload we just
+    // submitted — the user would then refresh and see the form
+    // auto-filled with data they already submitted.
+    isDirty.current = false;
+    // Wipe the in-memory payload too. If anything still manages to
+    // schedule a save (a stray effect, a future code path), the
+    // empty shape gets persisted instead of the submitted one. The
+    // wizard component will see a clean form on next visit.
+    setPayload(emptyPeternak());
     setSavedAt(null);
   }, [modeKey]);
 
