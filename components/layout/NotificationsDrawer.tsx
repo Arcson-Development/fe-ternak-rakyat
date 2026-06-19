@@ -31,6 +31,7 @@ import { usePeternakList } from "../../hooks/useTernakRakyat";
 import {
   KATEGORI_LABEL,
   STATUS_OPERASIONAL_LABEL,
+  kemitraanLabel,
   type Kandang,
 } from "../../hooks/useTernakRakyat";
 import { listAllDrafts, deleteDraft } from "../../hooks/useTernakRakyat/useWizardDraft";
@@ -102,7 +103,7 @@ export function NotificationsDrawer() {
           id: `kdg-${p.id}-${i}`,
           kind: "kandang",
           title: `${k.nama || `Kandang ${i + 1}`} — ${STATUS_OPERASIONAL_LABEL[k.statusOperasional]}`,
-          description: `${p.nama} · ${k.jenisUsaha ? `Kemitraan ${k.kemitraan ?? ""}` : "Mandiri"}`,
+          description: `${p.nama} · ${k.jenisUsaha ? `Kemitraan ${kemitraanLabel(k.kemitraan)}` : "Mandiri"}`,
           when: p.createdAt,
           href: `/dashboard/peternak/${p.id}`,
           ...ICON_MAP.kandang,

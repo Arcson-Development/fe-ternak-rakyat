@@ -53,6 +53,7 @@ import {
   JENIS_USAHA_LABEL,
   KAPASITAS_LABEL,
   KATEGORI_LABEL,
+  kemitraanLabel,
   type KategoriPeternak,
   type Kandang,
 } from "../../../hooks/useTernakRakyat";
@@ -358,12 +359,12 @@ export default function LaporanPage() {
                 ) : (
                   <Stack gap="xs">
                     {DAFTAR_KEMITRAAN.filter((m) => byMitra[m]).map((m) => (
-                      <Bar key={m} label={m} value={byMitra[m]} total={totalOperasi} color="#f59e0b" />
+                      <Bar key={m} label={kemitraanLabel(m)} value={byMitra[m]} total={totalOperasi} color="#f59e0b" />
                     ))}
                     {Object.keys(byMitra)
                       .filter((m) => !(DAFTAR_KEMITRAAN as readonly string[]).includes(m))
                       .map((m) => (
-                        <Bar key={m} label={m} value={byMitra[m]} total={totalOperasi} color="#94a3b8" />
+                        <Bar key={m} label={kemitraanLabel(m)} value={byMitra[m]} total={totalOperasi} color="#94a3b8" />
                       ))}
                   </Stack>
                 )}

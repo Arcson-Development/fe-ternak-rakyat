@@ -45,6 +45,7 @@ import {
   JENIS_USAHA_LABEL,
   KAPASITAS_LABEL,
   KATEGORI_LABEL,
+  kemitraanLabel,
 } from "../../../hooks/useTernakRakyat";
 
 function PeternakListContent() {
@@ -517,7 +518,7 @@ function PeternakDetail({ p }: { p: Peternak }) {
                       variant="custom"
                       label={
                         k.jenisUsaha === "kemitraan"
-                          ? `Kemitraan: ${k.kemitraan || "—"}`
+                          ? `Kemitraan: ${kemitraanLabel(k.kemitraan)}`
                           : JENIS_USAHA_LABEL.mandiri
                       }
                       color={k.jenisUsaha === "kemitraan" ? "accent" : "primary"}

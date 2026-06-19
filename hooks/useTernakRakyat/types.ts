@@ -145,7 +145,8 @@ export const DAFTAR_KEMITRAAN: Kemitraan[] = [
   "super_unggas_jaya",
 ];
 
-export const KEMITRAAN_LABEL: Record<Kemitraan, string> = {
+export const KEMITRAAN_LABEL: Record<Kemitraan | "", string> = {
+  "": "",
   charoen_phokphan: "Charoen Phokphan",
   japfa_comfeed: "Japfa Comfeed",
   ciomas_adistawa: "Ciomas Adistawa",
@@ -156,6 +157,20 @@ export const KEMITRAAN_LABEL: Record<Kemitraan, string> = {
   mitra_mahkota_buana: "Mitra Mahkota Buana (MMB)",
   super_unggas_jaya: "Super Unggas Jaya",
 };
+
+/**
+ * Render a kemitraan enum key as a human-readable name. Falls back to
+ * the raw key (and then to "—") when nothing matches, so callers can
+ * use the result directly in JSX without a second null-check.
+ *
+ *   kemitraanLabel("charoen_phokphan") // → "Charoen Phokphan"
+ *   kemitraanLabel("unknown_key")      // → "unknown_key"
+ *   kemitraanLabel("")                 // → "—"
+ */
+export function kemitraanLabel(key: string | "" | undefined | null): string {
+  if (!key) return "—";
+  return KEMITRAAN_LABEL[key as Kemitraan] ?? key;
+}
 
 export const KATEGORI_LABEL: Record<KategoriPeternak | "", string> = {
   "": "Pilih",

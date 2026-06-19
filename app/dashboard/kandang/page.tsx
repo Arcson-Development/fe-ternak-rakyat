@@ -39,7 +39,13 @@ import { StatusBadge } from "../../../components/ui/StatusBadge";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { usePeternakList, useTernakStore } from "../../../hooks/useTernakRakyat";
 import { buildKandangWorkbook, downloadWorkbook, TIMESTAMP } from "../../../lib/export";
-import { JENIS_USAHA_LABEL, KAPASITAS_LABEL, type Kandang, type Peternak } from "../../../hooks/useTernakRakyat";
+import {
+  JENIS_USAHA_LABEL,
+  KAPASITAS_LABEL,
+  kemitraanLabel,
+  type Kandang,
+  type Peternak,
+} from "../../../hooks/useTernakRakyat";
 
 type Row = {
   peternak: Peternak;
@@ -657,7 +663,7 @@ function KandangDetail({ row, onClose, onDelete }: { row: Row; onClose: () => vo
             {k.jenisUsaha === "kemitraan" && (
               <Group justify="space-between">
                 <Text fz="sm" c="dimmed">Mitra</Text>
-                <Text fz="sm" fw={500}>{k.kemitraan || "—"}</Text>
+                <Text fz="sm" fw={500}>{kemitraanLabel(k.kemitraan)}</Text>
               </Group>
             )}
           </Stack>

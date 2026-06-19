@@ -23,6 +23,7 @@ import {
   DAFTAR_KEMITRAAN,
   JENIS_USAHA_LABEL,
   KAPASITAS_LABEL,
+  kemitraanLabel,
   type JenisUsaha,
   type Kandang,
   type KapasitasKandang,
@@ -192,7 +193,10 @@ export function StepOperasional({ list, onChange }: Props) {
                             : "—"
                         }
                         withAsterisk={k.jenisUsaha === "kemitraan"}
-                        data={DAFTAR_KEMITRAAN.map((n) => ({ value: n, label: n }))}
+                        data={DAFTAR_KEMITRAAN.map((n) => ({
+                          value: n,
+                          label: kemitraanLabel(n),
+                        }))}
                         value={k.kemitraan || null}
                         onChange={(v) => setOp("kemitraan", (v as any) || "")}
                         searchable

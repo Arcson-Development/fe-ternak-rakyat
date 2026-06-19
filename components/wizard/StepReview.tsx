@@ -27,6 +27,7 @@ import { StatusBadge } from "../ui/StatusBadge";
 import {
   KAPASITAS_LABEL,
   KATEGORI_LABEL,
+  kemitraanLabel,
   type KategoriPeternak,
   type Kandang,
 } from "../../hooks/useTernakRakyat";
@@ -205,7 +206,7 @@ export function StepReview({ identitas, kandangList, onJumpTo }: Props) {
                     <StatusBadge
                       variant="custom"
                       label={k.jenisUsaha === "kemitraan"
-                        ? `Kemitraan: ${k.kemitraan}`
+                        ? `Kemitraan: ${kemitraanLabel(k.kemitraan)}`
                         : "Usaha: Mandiri"}
                       color={k.jenisUsaha === "kemitraan" ? "accent" : "primary"}
                     />

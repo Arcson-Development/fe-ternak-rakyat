@@ -59,6 +59,7 @@ import {
   KAPASITAS_LABEL,
   KATEGORI_LABEL,
   STATUS_OPERASIONAL_LABEL,
+  kemitraanLabel,
   usePeternakList,
   useTernakStore,
   type Kandang,
@@ -527,7 +528,7 @@ function KandangCard({ k, index, onOpenLightbox }: { k: Kandang; index: number; 
               {k.jenisUsaha === "kemitraan" && (
                 <Stack gap={2}>
                   <Text fz="xs" c="dimmed">Mitra</Text>
-                  <Text fz="sm" fw={600}>{k.kemitraan || "—"}</Text>
+                  <Text fz="sm" fw={600}>{kemitraanLabel(k.kemitraan)}</Text>
                 </Stack>
               )}
             </Group>
@@ -611,7 +612,7 @@ function TimelineTab({ p }: { p: Peternak }) {
                   k.statusOperasional === "operasi"
                     ? `${KAPASITAS_LABEL[k.jumlahAyam]} · ${
                         k.jenisUsaha === "kemitraan"
-                          ? `Kemitraan ${k.kemitraan}`
+                          ? `Kemitraan ${kemitraanLabel(k.kemitraan)}`
                           : "Mandiri"
                       }`
                     : "Kandang tidak beroperasi"
