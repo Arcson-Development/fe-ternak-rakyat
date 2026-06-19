@@ -7,12 +7,14 @@ import {
   Badge,
   Button,
   Card,
+  Center,
   Container,
   Drawer,
   Grid,
   Group,
   Image,
   Modal,
+  Pagination,
   ScrollArea,
   Stack,
   Table,
@@ -27,6 +29,7 @@ import {
   IconBuildingWarehouse,
   IconFileSpreadsheet,
   IconPlus,
+  IconRefresh,
   IconTrash,
   IconSearch,
   IconUser,
@@ -46,23 +49,37 @@ import {
   KAPASITAS_LABEL,
   KATEGORI_LABEL,
   kemitraanLabel,
+  useFormList,
+  useDeleteForm,
+  formItemToPeternak,
+  type FormItem,
 } from "../../../hooks/useTernakRakyat";
 
 function PeternakListContent() {
-  const [ready, setReady] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [search, setSearch] = useState("");
   const router = useRouter();
-  useEffect(() => {
-    const t = setTimeout(() => setReady(true), 200);
-    return () => clearTimeout(t);
-  }, []);
-  const list = usePeternakList();
-  const remove = useTernakStore((s) => s.remove);
-  const removeMany = useTernakStore((s) => s.removeMany);
+  // Backend-driven list with client-side search filter. Server-side
+  // search also exists (`?search=` query param) — we debounce it
+  // slightly via the search state, but for the common case of "type
+  // and press Enter" the local filter is instant.
+  const { data, isLoading, isError, error, refetch } = useFormList(
+    page,
+    limit,
+    ""
+  );
+  const deleteForm = useDeleteForm();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmBulkDel, setConfirmBulkDel] = useState(false);
+  const [selected, setSelected] = useState<Peternak | null>(null);
 
-
-
+  // Convert the backend FormItem[] into the local Peternak[] that
+  // the rest of this page (rendering, status badges, Excel export)
+  // was built around. Photos come back as paths from the API so the
+  // transform wires them up as fully-qualified `${IMAGE_BASE}/...`
+  // URLs on the resulting PhotoRef.preview.
+  const list: Peternak[] = (data?.data ?? []).map(formItemToPeternak);
 
   const toggleOne = (id: string) => {
     setSelectedIds((prev) => {
@@ -93,25 +110,36 @@ function PeternakListContent() {
     [list, selectedIds]
   );
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return;
-    try {
-      removeMany(Array.from(selectedIds));
+    const ids = Array.from(selectedIds);
+    let success = 0;
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        await deleteForm.mutateAsync(id);
+        success++;
+      } catch {
+        failed++;
+      }
+    }
+    if (success > 0) {
       notifications.show({
         title: "Berhasil dihapus",
-        message: `${selectedIds.size} data peternak telah dihapus.`,
-        color: "green",
+        message: `${success} data peternak telah dihapus dari server${
+          failed > 0 ? `, ${failed} gagal.` : "."
+        }`,
+        color: failed > 0 ? "yellow" : "green",
       });
-      clearSelection();
-    } catch {
+    } else {
       notifications.show({
         title: "Gagal menghapus",
-        message: "Terjadi kesalahan saat menghapus data.",
+        message: "Tidak ada data yang berhasil dihapus dari server.",
         color: "red",
       });
-    } finally {
-      setConfirmBulkDel(false);
     }
+    clearSelection();
+    setConfirmBulkDel(false);
   };
 
   const handleBulkExport = () => {
@@ -133,7 +161,6 @@ function PeternakListContent() {
       });
     }
   };
-  const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -141,14 +168,13 @@ function PeternakListContent() {
     return list.filter((p) => {
       return (
         p.nama.toLowerCase().includes(q) ||
-        p.noKtp.includes(q) ||
+        p.noKtp.toLowerCase().includes(q) ||
         (p.alamat.kelurahan?.name ?? "").toLowerCase().includes(q) ||
         (p.alamat.kabupaten?.name ?? "").toLowerCase().includes(q)
       );
     });
-  }, [list, search]);  const [selected, setSelected] = useState<Peternak | null>(null);
+  }, [list, search]);
 
-  // Keep selection valid when filtered list changes
   const filteredIds = useMemo(() => new Set(filtered.map((p) => p.id)), [filtered]);
   const allFilteredSelected = filtered.length > 0 && filtered.every((p) => selectedIds.has(p.id));
   const someFilteredSelected = filtered.some((p) => selectedIds.has(p.id));
@@ -179,7 +205,40 @@ function PeternakListContent() {
     }
   };
 
-  if (!ready) return <ListSkeleton />;
+  if (isLoading) return <ListSkeleton />;
+
+  if (isError) {
+    return (
+      <Container size="xl" px={0}>
+        <Stack gap="md">
+          <PageHeader
+            eyebrow="Master Data"
+            title="Daftar Peternak"
+            description="Gagal memuat data dari server."
+          />
+          <Card withBorder padding="md" radius="md">
+            <Group justify="space-between">
+              <Stack gap={0}>
+                <Text fw={600} c="red.7">Terjadi kesalahan</Text>
+                <Text fz="sm" c="dimmed">
+                  {(error as Error)?.message || "Periksa koneksi Anda."}
+                </Text>
+              </Stack>
+              <Button
+                leftSection={<IconRefresh size={14} />}
+                onClick={() => refetch()}
+              >
+                Coba lagi
+              </Button>
+            </Group>
+          </Card>
+        </Stack>
+      </Container>
+    );
+  }
+
+  const totalPages = data?.meta?.total_pages ?? 1;
+  const total = data?.meta?.total_data ?? list.length;
 
   return (
     <Container size="xl" px={0}>
@@ -187,7 +246,7 @@ function PeternakListContent() {
         <PageHeader
           eyebrow="Master Data"
           title="Daftar Peternak"
-          description="Semua peternak yang telah terdaftar. Klik baris untuk melihat detail."
+          description={`${total} peternak terdaftar. Klik baris untuk melihat detail.`}
           actions={
             <Button
               leftSection={<IconPlus size={16} />}
@@ -381,6 +440,18 @@ function PeternakListContent() {
                 </Table.Tbody>
               </Table>
             </ScrollArea>
+            {totalPages > 1 && (
+              <Center p="md">
+                <Pagination
+                  value={page}
+                  onChange={setPage}
+                  total={totalPages}
+                  color="primary"
+                  radius="md"
+                  withEdges
+                />
+              </Center>
+            )}
           </Card>
         )}
       </Stack>

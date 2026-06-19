@@ -27,7 +27,8 @@ import {
   IconUser,
 } from "@tabler/icons-react";
 import {
-  usePeternakList,
+  useFormById,
+  formItemToPeternak,
   type Peternak,
   type Kandang,
   type PhotoRef,
@@ -59,8 +60,14 @@ export default function FormDetailPage() {
     setHydrated(true);
   }, []);
 
-  const list = usePeternakList();
-  const form = useMemoById(list, id);
+  // Fetch directly from the backend by id, then transform the
+  // snake_case FormItem envelope into the local Peternak shape the
+  // rest of this page (rendering, status badges, photos as
+  // ${IMAGE_BASE}/<path>) was built around.
+  const { data: formData, isLoading, isError, error, refetch } = useFormById(
+    id
+  );
+  const form: Peternak | null = formData ? formItemToPeternak(formData) : null;
 
   return (
     <Box className="pendaftaran-shell">
@@ -92,15 +99,16 @@ export default function FormDetailPage() {
 
       <Container size="lg" py="md">
         {/* Loading skeleton */}
-        {!hydrated && <DetailSkeleton />}
+        {(!hydrated || isLoading) && <DetailSkeleton />}
 
-        {/* Not found */}
-        {hydrated && !form && (
+        {/* Not found / error */}
+        {hydrated && !isLoading && (isError || !form) && (
           <Card withBorder padding="xl" radius="md" style={{ textAlign: "center" }}>
             <Stack align="center" gap="sm">
               <Text fw={600}>Pendaftaran tidak ditemukan</Text>
               <Text fz="sm" c="dimmed">
-                ID "{id}" tidak ada di daftar lokal browser ini.
+                {(error as Error)?.message ||
+                  `ID "${id}" tidak ditemukan di server.`}
               </Text>
               <Button
                 variant="light"
@@ -115,7 +123,7 @@ export default function FormDetailPage() {
         )}
 
         {/* Loaded content */}
-        {hydrated && form && (
+        {hydrated && !isLoading && form && (
           <Stack gap="md">
             <DetailHeader form={form} />
             <IdentitasCard form={form} />
@@ -136,15 +144,6 @@ export default function FormDetailPage() {
       </Container>
     </Box>
   );
-}
-
-// ================== hooks & helpers ==================
-
-function useMemoById(list: Peternak[], id: string | undefined): Peternak | null {
-  return React.useMemo(() => {
-    if (!id) return null;
-    return list.find((p) => String(p.id) === String(id)) ?? null;
-  }, [list, id]);
 }
 
 // ================== subcomponents ==================

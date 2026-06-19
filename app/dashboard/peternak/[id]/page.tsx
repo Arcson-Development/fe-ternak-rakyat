@@ -60,8 +60,9 @@ import {
   KATEGORI_LABEL,
   STATUS_OPERASIONAL_LABEL,
   kemitraanLabel,
-  usePeternakList,
-  useTernakStore,
+  useFormById,
+  useDeleteForm,
+  formItemToPeternak,
   type Kandang,
   type Peternak,
 } from "../../../../hooks/useTernakRakyat";
@@ -80,8 +81,6 @@ function PeternakDetailContent() {
 function PeternakDetailInner() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const list = usePeternakList();
-  const remove = useTernakStore((s) => s.remove);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [lightboxPhotos, setLightboxPhotos] = useState<PhotoItem[]>([]);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -92,18 +91,30 @@ function PeternakDetailInner() {
     setLightboxOpen(true);
   };
 
-  const peternak = useMemo(
-    () => list.find((p) => p.id === params.id) ?? null,
-    [list, params.id]
+  // Fetch directly from the backend by id. The transform converts
+  // the snake_case FormItem envelope into the local Peternak shape
+  // the rest of this page was built around (status badges, lightbox
+  // photos via ${IMAGE_BASE}/<path>, etc.).
+  const { data: formData, isLoading, isError, error, refetch } = useFormById(
+    params.id as string | undefined
   );
+  const deleteForm = useDeleteForm();
+  const peternak: Peternak | null = formData
+    ? formItemToPeternak(formData)
+    : null;
 
-  if (!peternak) {
+  if (isLoading) return <DetailSkeleton />;
+
+  if (isError || !peternak) {
     return (
       <Container size="md">
         <EmptyState
           icon={IconUserCircle}
           title="Peternak tidak ditemukan"
-          description="Data ini mungkin telah dihapus atau tidak tersedia."
+          description={
+            (error as Error)?.message ||
+            "Data ini mungkin telah dihapus atau tidak tersedia."
+          }
           action={
             <Button leftSection={<IconArrowLeft size={14} />} onClick={() => router.push("/dashboard/peternak")}>
               Kembali ke daftar
@@ -140,14 +151,22 @@ function PeternakDetailInner() {
     }
   };
 
-  const handleDelete = () => {
-    remove(peternak.id);
-    notifications.show({
-      title: "Pendaftaran dihapus",
-      message: `${peternak.nama} telah dihapus dari daftar.`,
-      color: "green",
-    });
-    router.push("/dashboard/peternak");
+  const handleDelete = async () => {
+    try {
+      await deleteForm.mutateAsync(peternak.id);
+      notifications.show({
+        title: "Pendaftaran dihapus",
+        message: `${peternak.nama} telah dihapus dari server.`,
+        color: "green",
+      });
+      router.push("/dashboard/peternak");
+    } catch (err) {
+      notifications.show({
+        title: "Gagal menghapus",
+        message: (err as Error)?.message || "Periksa koneksi Anda.",
+        color: "red",
+      });
+    }
   };
 
   return (

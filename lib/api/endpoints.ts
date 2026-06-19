@@ -116,6 +116,138 @@ export async function fetchKelurahan(kecamatanId: string): Promise<RegionRef[]> 
   return (data.data ?? []).map((k) => toRegionRef(k, "kelurahan_id"));
 }
 
+// ---------- form browse (admin + public) ----------
+//
+// Backend endpoints exposed to the petenak role (same hardcoded
+// token as the registration flow). The admin `/dashboard/peternak`
+// list, the admin detail, the public list at `/pendaftaran/daftar`,
+// and the public detail all read from the SAME backend API, so
+// anything submitted through the wizard appears everywhere
+// without manual refresh (a query-invalidation in the submit
+// mutation does that for us).
+//
+// Field names mirror the backend envelope exactly (snake_case). They
+// do NOT match the local `Peternak` type used by the wizard.
+
+export type FormKandangItem = {
+  id: number;
+  form_peternakan_id: number;
+  kategori_peternakan: string | null;
+  latitude: string;
+  longitude: string;
+  kapasitas: string;
+  dinding: string;
+  dinding_foto: string;
+  atap: string;
+  atap_foto: string;
+  lantai: string;
+  lantai_foto: string;
+  tmp_mkn: string;
+  tmp_mkn_foto: string;
+  tmp_mnm: string;
+  tmp_mnm_foto: string;
+  brooding: string;
+  brooding_foto: string;
+  kipas: string;
+  kipas_foto: string;
+  is_operating: boolean;
+  jml_ayam: string;
+  jenis_usaha: string;
+  jenis_kemitraan: string;
+  created_at: string;
+};
+
+export type FormItem = {
+  id: number;
+  nama: string;
+  provinsi_id: number;
+  kabupaten_id: number;
+  kecamatan_id: number;
+  kelurahan_id: string;
+  ktp_no: string;
+  ktp_foto: string;
+  created_at: string;
+  kategori_peternak: string;
+  alamat: string;
+  form_peternakan_kandang: FormKandangItem[];
+  provinsi: string;
+  kabupaten: string;
+  kecamatan: string;
+  kelurahan: string;
+};
+
+export type FormListMeta = {
+  page: number;
+  limit: number;
+  total_data: number;
+  total_pages: number;
+};
+
+export type FormListResponse = {
+  status: number;
+  error: boolean;
+  message: string;
+  meta: FormListMeta;
+  data: FormItem[];
+};
+
+export type FormDetailResponse = {
+  status: number;
+  error: boolean;
+  message: string;
+  data: FormItem;
+};
+
+export type FormDeleteResponse = {
+  status: number;
+  error: boolean;
+  message: string;
+};
+
+async function authedPeternakAxios() {
+  const token = await ensurePeternakToken();
+  return {
+    headers: { Authorization: `Bearer ${token}` },
+    timeout: 20_000,
+  };
+}
+
+export async function fetchFormList(
+  page: number = 1,
+  limit: number = 10,
+  search: string = ""
+): Promise<FormListResponse> {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+  if (search.trim()) params.set("search", search.trim());
+  const config = await authedPeternakAxios();
+  const { data } = await axios.get<FormListResponse>(
+    `${DOMAIN_API}/form/get-all?${params.toString()}`,
+    config
+  );
+  return data;
+}
+
+export async function fetchFormById(id: string | number): Promise<FormItem> {
+  const config = await authedPeternakAxios();
+  const { data } = await axios.get<FormDetailResponse>(
+    `${DOMAIN_API}/form/get-by-id/${id}`,
+    config
+  );
+  return data.data;
+}
+
+export async function deleteForm(id: string | number): Promise<FormDeleteResponse> {
+  const config = await authedPeternakAxios();
+  const { data } = await axios.delete<FormDeleteResponse>(
+    `${DOMAIN_API}/form/delete/${id}`,
+    config
+  );
+  return data;
+}
+
 // ---------- master data ----------
 
 export async function fetchKemitraan(): Promise<readonly string[]> {

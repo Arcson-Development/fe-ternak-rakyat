@@ -11,6 +11,8 @@ import {
   Center,
   Container,
   Group,
+  Loader,
+  Pagination,
   Skeleton,
   Stack,
   Table,
@@ -19,14 +21,21 @@ import {
   Tooltip,
 } from "@mantine/core";
 import {
+  IconAlertCircle,
   IconArrowLeft,
   IconChevronRight,
   IconHome,
+  IconRefresh,
   IconSearch,
   IconUserPlus,
 } from "@tabler/icons-react";
-import { usePeternakList, type Peternak } from "../../../hooks/useTernakRakyat";
-import { KATEGORI_LABEL } from "../../../hooks/useTernakRakyat";
+import {
+  useFormList,
+  formItemToPeternak,
+  type FormItem,
+  KATEGORI_LABEL,
+  type Peternak,
+} from "../../../hooks/useTernakRakyat";
 
 /**
  * Public list of every submitted registration that lives in the
@@ -40,6 +49,8 @@ import { KATEGORI_LABEL } from "../../../hooks/useTernakRakyat";
  */
 export default function DaftarPendaftaranPage() {
   const router = useRouter();
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
   const [search, setSearch] = useState("");
   const [hydrated, setHydrated] = useState(false);
 
@@ -50,7 +61,16 @@ export default function DaftarPendaftaranPage() {
     setHydrated(true);
   }, []);
 
-  const list = usePeternakList();
+  const { data, isLoading, isFetching, isError, error, refetch } = useFormList(
+    page,
+    limit,
+    ""
+  );
+  // Convert the backend FormItem[] into the local Peternak[] that
+  // the rest of this page (rendering, status badges) was built
+  // around. Backend photos come back as paths, so the transform
+  // wires them up as fully-qualified `${IMAGE_BASE}/<path>` URLs.
+  const list: Peternak[] = (data?.data ?? []).map(formItemToPeternak);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -59,10 +79,10 @@ export default function DaftarPendaftaranPage() {
       return (
         p.nama.toLowerCase().includes(q) ||
         p.noKtp.toLowerCase().includes(q) ||
-        p.alamat.provinsi?.name?.toLowerCase().includes(q) ||
-        p.alamat.kabupaten?.name?.toLowerCase().includes(q) ||
-        p.alamat.kecamatan?.name?.toLowerCase().includes(q) ||
-        p.alamat.kelurahan?.name?.toLowerCase().includes(q) ||
+        (p.alamat.provinsi?.name ?? "").toLowerCase().includes(q) ||
+        (p.alamat.kabupaten?.name ?? "").toLowerCase().includes(q) ||
+        (p.alamat.kecamatan?.name ?? "").toLowerCase().includes(q) ||
+        (p.alamat.kelurahan?.name ?? "").toLowerCase().includes(q) ||
         p.alamat.detail.toLowerCase().includes(q)
       );
     });
@@ -105,17 +125,54 @@ export default function DaftarPendaftaranPage() {
               placeholder="Cari nama, No. KTP, atau alamat..."
               leftSection={<IconSearch size={16} />}
               value={search}
-              onChange={(e) => setSearch(e.currentTarget.value)}
+              onChange={(e) => {
+                setSearch(e.currentTarget.value);
+                setPage(1);
+              }}
               w={{ base: "100%", sm: 380 }}
+              rightSection={isFetching ? <Loader size="xs" /> : null}
             />
             <Text fz="sm" c="dimmed">
-              {!hydrated
+              {!hydrated || isLoading
                 ? "Memuat..."
                 : filtered.length > 0
-                ? `Menampilkan ${filtered.length} dari ${list.length} pendaftaran`
+                ? `Halaman ${page} dari ${data?.meta?.total_pages ?? 1} • ${data?.meta?.total_data ?? filtered.length} total`
                 : "Belum ada pendaftaran"}
             </Text>
           </Group>
+
+          {/* Error state */}
+          {isError && (
+            <Card
+              withBorder
+              padding="md"
+              radius="md"
+              style={{ borderColor: "var(--mantine-color-red-3)" }}
+            >
+              <Group justify="space-between" align="center">
+                <Group gap="sm">
+                  <IconAlertCircle color="var(--mantine-color-red-6)" />
+                  <Stack gap={0}>
+                    <Text fw={600} fz="sm" c="red.7">
+                      Gagal memuat daftar
+                    </Text>
+                    <Text fz="xs" c="dimmed">
+                      {(error as Error)?.message || "Periksa koneksi Anda."}
+                    </Text>
+                  </Stack>
+                </Group>
+                <Button
+                  variant="light"
+                  color="red"
+                  size="xs"
+                  leftSection={<IconRefresh size={14} />}
+                  onClick={() => refetch()}
+                >
+                  Coba lagi
+                </Button>
+              </Group>
+            </Card>
+          )}
 
           {/* Loading skeleton (only first render) */}
           {!hydrated && (
@@ -159,7 +216,7 @@ export default function DaftarPendaftaranPage() {
                 <IconSearch size={32} color="var(--app-text-subtle)" />
                 <Text fw={600}>Belum ada pendaftaran</Text>
                 <Text fz="sm" c="dimmed">
-                  Data pendaftaran yang baru Anda submit akan tampil di sini.
+                  Belum ada data pendaftaran yang tersimpan di server.
                 </Text>
                 <Button
                   variant="filled"
@@ -285,6 +342,20 @@ export default function DaftarPendaftaranPage() {
                 </Table.Tbody>
               </Table>
             </Card>
+          )}
+
+          {/* Pagination */}
+          {hydrated && (data?.meta?.total_pages ?? 1) > 1 && (
+            <Center>
+              <Pagination
+                value={page}
+                onChange={setPage}
+                total={data?.meta?.total_pages ?? 1}
+                color="primary"
+                radius="md"
+                withEdges
+              />
+            </Center>
           )}
 
           {/* Back to home hint */}

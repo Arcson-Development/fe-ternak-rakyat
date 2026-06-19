@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { useMemo } from "react";
 import {
   getKabupaten,
@@ -12,15 +12,24 @@ import { useTernakStore } from "./store/ternakStore";
 import { DOMAIN_API } from "../../utils/contants/env";
 import {
   createPeternak,
+  deleteForm,
+  fetchFormById,
+  fetchFormList,
   fetchKabupaten,
   fetchKecamatan,
   fetchKelurahan,
   fetchProvinsi,
   submitForm,
   toApiError,
+  type FormItem,
+  type FormListResponse,
 } from "../../lib/api";
 import { ensurePeternakToken } from "../../lib/auth/peternakAuth";
 import type { Peternak, RegionRef } from "./types";
+
+/** Centralised query key for the form list so any mutation that
+ *  affects it can invalidate consistently. */
+export const formListQueryKey = ["form", "list"] as const;
 
 /**
  * Public surface for the Ternak Rakyat feature.
@@ -156,6 +165,7 @@ export function useKelurahan(
  */
 export function useSubmitPeternak() {
   const add = useTernakStore((s) => s.add);
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: Peternak): Promise<Peternak> => {
       if (USE_REAL_API) {
@@ -182,6 +192,9 @@ export function useSubmitPeternak() {
                 createdAt: data.createdAt || new Date().toISOString(),
               };
           add(finalSaved);
+          // Refresh the backend-backed list (admin + public) so the
+          // new submission appears without a manual page reload.
+          queryClient.invalidateQueries({ queryKey: formListQueryKey });
           return finalSaved;
         } catch (err) {
           const e = toApiError(err);
@@ -233,8 +246,56 @@ export function usePeternakList(): Peternak[] {
   );
 }
 
+/**
+ * Hooks for the backend-driven form list. Used by:
+ *   - `/dashboard/peternak` (admin list)
+ *   - `/pendaftaran/daftar` (public list)
+ *
+ * Both pages authenticate with the same petenak token used by
+ * /form/create, so no admin session is required. The list cache is
+ * 30s; `placeholderData: keepPreviousData` keeps the table stable
+ * during pagination so it doesn't flash empty.
+ */
+export function useFormList(
+  page: number = 1,
+  limit: number = 10,
+  search: string = ""
+) {
+  return useQuery<FormListResponse>({
+    queryKey: [...formListQueryKey, page, limit, search],
+    queryFn: () => fetchFormList(page, limit, search),
+    staleTime: 30 * 1000,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useFormById(id: string | number | undefined) {
+  return useQuery<FormItem>({
+    queryKey: ["form", "detail", id],
+    queryFn: () => fetchFormById(id as string | number),
+    enabled: id !== undefined && id !== null && `${id}`.length > 0,
+    staleTime: 60 * 1000,
+  });
+}
+
+/**
+ * Delete mutation. Invalidates the form list cache on success so any
+ * open list view (admin or public) refetches without the deleted row.
+ */
+export function useDeleteForm() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string | number) => deleteForm(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: formListQueryKey });
+    },
+  });
+}
+
 /** Lets the UI show which mode we're in (good for the Settings page). */
 export const isMockMode = !USE_REAL_API;
 
 export * from "./types";
 export { useTernakStore } from "./store/ternakStore";
+export { formItemToPeternak } from "./adapter";
+export type { FormItem, FormListResponse } from "../../lib/api";
