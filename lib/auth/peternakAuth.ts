@@ -96,8 +96,10 @@ export async function hardcodedPeternakLogin(): Promise<string> {
 
 /**
  * Convenience: return the cached token, calling /auth/peternak/sign-in
- * transparently when there isn't one. Use this right before submitting
- * the wizard so a long-lived session always has a valid bearer.
+ * transparently when there isn't one. Use this right before any
+ * call that needs the petenak bearer — the wizard submit AND the
+ * public list / detail / delete endpoints all share this single
+ * helper, so the token is fetched once per session and reused.
  */
 export async function ensurePeternakToken(): Promise<string> {
   const existing = getPeternakToken();
