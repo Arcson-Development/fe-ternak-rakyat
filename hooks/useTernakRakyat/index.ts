@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import {
   getKabupaten,
@@ -12,16 +12,12 @@ import { useTernakStore } from "./store/ternakStore";
 import { DOMAIN_API } from "../../utils/contants/env";
 import {
   createPeternak,
-  fetchFormById,
-  fetchFormList,
   fetchKabupaten,
   fetchKecamatan,
   fetchKelurahan,
   fetchProvinsi,
   submitForm,
   toApiError,
-  type FormItem,
-  type FormListResponse,
 } from "../../lib/api";
 import { ensurePeternakToken } from "../../lib/auth/peternakAuth";
 import type { Peternak, RegionRef } from "./types";
@@ -236,40 +232,6 @@ export function usePeternakList(): Peternak[] {
     [list]
   );
 }
-
-/**
- * Public form browse hooks. Backed by `/form/get-all` and
- * `/form/get-by-id`, both authenticated with the petenak token
- * (the same one used for /form/create). No admin session required.
- *
- * List cache is 30s (the list can change as new submissions land).
- * Detail cache is 60s (records rarely change after creation).
- */
-export function useFormList(
-  page: number = 1,
-  limit: number = 10,
-  search: string = ""
-) {
-  return useQuery<FormListResponse>({
-    queryKey: ["form", "list", page, limit, search],
-    queryFn: () => fetchFormList(page, limit, search),
-    staleTime: 30 * 1000,
-    placeholderData: keepPreviousData,
-  });
-}
-
-export function useFormById(id: string | number | undefined) {
-  return useQuery<FormItem>({
-    queryKey: ["form", "detail", id],
-    queryFn: () => fetchFormById(id as string | number),
-    enabled: id !== undefined && id !== null && `${id}`.length > 0,
-    staleTime: 60 * 1000,
-  });
-}
-
-// Re-export the form response types so pages can import them through
-// the same barrel they pull the hooks from.
-export type { FormItem, FormListResponse } from "../../lib/api";
 
 /** Lets the UI show which mode we're in (good for the Settings page). */
 export const isMockMode = !USE_REAL_API;

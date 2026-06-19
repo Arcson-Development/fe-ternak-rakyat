@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ActionIcon,
@@ -11,8 +11,6 @@ import {
   Center,
   Container,
   Group,
-  Loader,
-  Pagination,
   Skeleton,
   Stack,
   Table,
@@ -20,53 +18,58 @@ import {
   TextInput,
   Tooltip,
 } from "@mantine/core";
-import { useDebouncedValue } from "@mantine/hooks";
 import {
-  IconAlertCircle,
   IconArrowLeft,
   IconChevronRight,
   IconHome,
-  IconRefresh,
   IconSearch,
   IconUserPlus,
 } from "@tabler/icons-react";
-import { useFormList, type FormItem } from "../../../hooks/useTernakRakyat";
+import { usePeternakList, type Peternak } from "../../../hooks/useTernakRakyat";
+import { KATEGORI_LABEL } from "../../../hooks/useTernakRakyat";
 
 /**
- * Public list of every submitted registration. Reads from
- * `/form/get-all?page=&limit=&search=` using the same petenak token
- * the wizard uses for `/form/create`, so anyone can browse without
- * being logged in as an admin.
+ * Public list of every submitted registration that lives in the
+ * local Zustand store. Reads through `usePeternakList()` — the SAME
+ * data source the admin's `/dashboard/peternak` page uses — so
+ * visitors who just submitted see their row, and any submissions
+ * persisted to localStorage from a previous visit reappear here.
  *
  * Click a row to drill into the detail page at
  * `/pendaftaran/daftar/[id]`.
  */
 export default function DaftarPendaftaranPage() {
   const router = useRouter();
-  const [page, setPage] = useState(1);
-  const [limit] = useState(10);
-  const [searchInput, setSearchInput] = useState("");
-  const [debouncedSearch] = useDebouncedValue(searchInput, 300);
+  const [search, setSearch] = useState("");
+  const [hydrated, setHydrated] = useState(false);
 
-  const { data, isLoading, isFetching, isError, error, refetch } = useFormList(
-    page,
-    limit,
-    debouncedSearch
-  );
+  // The store is persisted via zustand/middleware, so it hydrates
+  // synchronously on the client. We set `hydrated` to true on first
+  // render so the skeleton shows until the persisted state loads.
+  React.useEffect(() => {
+    setHydrated(true);
+  }, []);
 
-  const totalPages = data?.meta?.total_pages ?? 1;
-  const total = data?.meta?.total_data ?? 0;
-  const items = data?.data ?? [];
+  const list = usePeternakList();
 
-  const handleSearch = (val: string) => {
-    setSearchInput(val);
-    setPage(1); // any search resets to first page
-  };
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((p) => {
+      return (
+        p.nama.toLowerCase().includes(q) ||
+        p.noKtp.toLowerCase().includes(q) ||
+        p.alamat.provinsi?.name?.toLowerCase().includes(q) ||
+        p.alamat.kabupaten?.name?.toLowerCase().includes(q) ||
+        p.alamat.kecamatan?.name?.toLowerCase().includes(q) ||
+        p.alamat.kelurahan?.name?.toLowerCase().includes(q) ||
+        p.alamat.detail.toLowerCase().includes(q)
+      );
+    });
+  }, [list, search]);
 
   return (
     <Box className="pendaftaran-shell">
-      {/* Sticky top bar — same shell class as the wizard for visual
-          consistency. Stays at top while user scrolls the list. */}
       <Box className="pendaftaran-topbar">
         <Group justify="space-between" align="center" wrap="nowrap">
           <Group gap="sm" wrap="nowrap">
@@ -80,9 +83,6 @@ export default function DaftarPendaftaranPage() {
             <Text fw={700} fz="md">
               SITERNAK — Daftar Pendaftaran
             </Text>
-            {isFetching && !isLoading && (
-              <Loader size="xs" color="primary" />
-            )}
           </Group>
           <Group gap="xs" wrap="nowrap">
             <Button
@@ -102,62 +102,23 @@ export default function DaftarPendaftaranPage() {
           {/* Search + meta */}
           <Group justify="space-between" align="center" wrap="wrap">
             <TextInput
-              placeholder="Cari nama, No. KTP, kabupaten..."
+              placeholder="Cari nama, No. KTP, atau alamat..."
               leftSection={<IconSearch size={16} />}
-              value={searchInput}
-              onChange={(e) => handleSearch(e.currentTarget.value)}
+              value={search}
+              onChange={(e) => setSearch(e.currentTarget.value)}
               w={{ base: "100%", sm: 380 }}
-              rightSection={
-                isFetching ? <Loader size="xs" /> : null
-              }
             />
             <Text fz="sm" c="dimmed">
-              {isLoading
+              {!hydrated
                 ? "Memuat..."
-                : total > 0
-                ? `Menampilkan ${(page - 1) * limit + 1}–${Math.min(
-                    page * limit,
-                    total
-                  )} dari ${total} pendaftaran`
+                : filtered.length > 0
+                ? `Menampilkan ${filtered.length} dari ${list.length} pendaftaran`
                 : "Belum ada pendaftaran"}
             </Text>
           </Group>
 
-          {/* Error */}
-          {isError && (
-            <Card
-              withBorder
-              padding="md"
-              radius="md"
-              style={{ borderColor: "var(--mantine-color-red-3)" }}
-            >
-              <Group justify="space-between" align="center">
-                <Group gap="sm">
-                  <IconAlertCircle color="var(--mantine-color-red-6)" />
-                  <Stack gap={0}>
-                    <Text fw={600} fz="sm" c="red.7">
-                      Gagal memuat daftar
-                    </Text>
-                    <Text fz="xs" c="dimmed">
-                      {(error as Error)?.message || "Periksa koneksi Anda"}
-                    </Text>
-                  </Stack>
-                </Group>
-                <Button
-                  variant="light"
-                  color="red"
-                  size="xs"
-                  leftSection={<IconRefresh size={14} />}
-                  onClick={() => refetch()}
-                >
-                  Coba lagi
-                </Button>
-              </Group>
-            </Card>
-          )}
-
-          {/* Loading skeleton */}
-          {isLoading && (
+          {/* Loading skeleton (only first render) */}
+          {!hydrated && (
             <Card withBorder padding={0} radius="md">
               <Table verticalSpacing="sm">
                 <Table.Thead>
@@ -171,7 +132,7 @@ export default function DaftarPendaftaranPage() {
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {Array.from({ length: 5 }).map((_, i) => (
+                  {Array.from({ length: 3 }).map((_, i) => (
                     <Table.Tr key={i}>
                       <Table.Td><Skeleton h={14} w="60%" /></Table.Td>
                       <Table.Td><Skeleton h={14} w="70%" /></Table.Td>
@@ -187,7 +148,7 @@ export default function DaftarPendaftaranPage() {
           )}
 
           {/* Empty state */}
-          {!isLoading && !isError && items.length === 0 && (
+          {hydrated && list.length === 0 && (
             <Card
               withBorder
               padding="xl"
@@ -196,34 +157,48 @@ export default function DaftarPendaftaranPage() {
             >
               <Stack align="center" gap="sm">
                 <IconSearch size={32} color="var(--app-text-subtle)" />
-                <Text fw={600}>Tidak ada data</Text>
+                <Text fw={600}>Belum ada pendaftaran</Text>
                 <Text fz="sm" c="dimmed">
-                  {debouncedSearch
-                    ? `Pencarian "${debouncedSearch}" tidak menemukan hasil.`
-                    : "Belum ada pendaftaran yang tercatat."}
+                  Data pendaftaran yang baru Anda submit akan tampil di sini.
                 </Text>
-                {debouncedSearch && (
-                  <Button
-                    variant="subtle"
-                    size="xs"
-                    onClick={() => handleSearch("")}
-                  >
-                    Reset pencarian
-                  </Button>
-                )}
+                <Button
+                  variant="filled"
+                  size="sm"
+                  leftSection={<IconUserPlus size={14} />}
+                  onClick={() => router.push("/pendaftaran")}
+                  mt="xs"
+                >
+                  Daftar sekarang
+                </Button>
+              </Stack>
+            </Card>
+          )}
+
+          {/* No search results */}
+          {hydrated && list.length > 0 && filtered.length === 0 && (
+            <Card
+              withBorder
+              padding="xl"
+              radius="md"
+              style={{ textAlign: "center" }}
+            >
+              <Stack align="center" gap="sm">
+                <IconSearch size={32} color="var(--app-text-subtle)" />
+                <Text fw={600}>Tidak ada hasil</Text>
+                <Text fz="sm" c="dimmed">
+                  Pencarian "{search}" tidak menemukan hasil.
+                </Text>
+                <Button variant="subtle" size="xs" onClick={() => setSearch("")}>
+                  Reset pencarian
+                </Button>
               </Stack>
             </Card>
           )}
 
           {/* Data table */}
-          {!isLoading && items.length > 0 && (
+          {hydrated && filtered.length > 0 && (
             <Card withBorder padding={0} radius="md">
-              <Table
-                verticalSpacing="sm"
-                highlightOnHover
-                striped={false}
-                stickyHeader
-              >
+              <Table verticalSpacing="sm" highlightOnHover stickyHeader>
                 <Table.Thead>
                   <Table.Tr>
                     <Table.Th style={{ width: 50 }}>#</Table.Th>
@@ -237,7 +212,7 @@ export default function DaftarPendaftaranPage() {
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {items.map((item: FormItem, idx: number) => (
+                  {filtered.map((item: Peternak, idx: number) => (
                     <Table.Tr
                       key={item.id}
                       style={{ cursor: "pointer" }}
@@ -247,7 +222,7 @@ export default function DaftarPendaftaranPage() {
                     >
                       <Table.Td>
                         <Text fz="xs" c="dimmed" ff="monospace">
-                          {(page - 1) * limit + idx + 1}
+                          {idx + 1}
                         </Text>
                       </Table.Td>
                       <Table.Td>
@@ -262,27 +237,29 @@ export default function DaftarPendaftaranPage() {
                       </Table.Td>
                       <Table.Td>
                         <Text ff="monospace" fz="sm">
-                          {item.ktp_no}
+                          {item.noKtp}
                         </Text>
                       </Table.Td>
                       <Table.Td>
                         <Badge variant="light" color="primary" size="sm">
-                          {item.kategori_peternak}
+                          {KATEGORI_LABEL[item.kategori] || "—"}
                         </Badge>
                       </Table.Td>
                       <Table.Td>
                         <Text fz="sm">
-                          {item.kabupaten}, {item.provinsi}
+                          {item.alamat.kabupaten?.name
+                            ? `${item.alamat.kabupaten.name}, ${item.alamat.provinsi?.name ?? ""}`
+                            : "—"}
                         </Text>
                       </Table.Td>
                       <Table.Td>
                         <Badge variant="default" size="sm">
-                          {item.form_peternakan_kandang.length}
+                          {item.kandang.length}
                         </Badge>
                       </Table.Td>
                       <Table.Td>
                         <Text fz="xs" c="dimmed">
-                          {new Date(item.created_at).toLocaleDateString(
+                          {new Date(item.createdAt).toLocaleDateString(
                             "id-ID",
                             {
                               year: "numeric",
@@ -310,22 +287,8 @@ export default function DaftarPendaftaranPage() {
             </Card>
           )}
 
-          {/* Pagination */}
-          {!isLoading && totalPages > 1 && (
-            <Center>
-              <Pagination
-                value={page}
-                onChange={setPage}
-                total={totalPages}
-                color="primary"
-                radius="md"
-                withEdges
-              />
-            </Center>
-          )}
-
-          {/* Back to home hint at bottom */}
-          {!isLoading && (
+          {/* Back to home hint */}
+          {hydrated && (
             <Group justify="center" mt="md">
               <Button
                 variant="subtle"
