@@ -238,7 +238,11 @@ export function PendaftaranWizard({ initialValue, modeKey = "new" }: Props) {
           color: "green",
           icon: <IconCheck size={18} />,
         });
-        route.push("/dashboard/peternak");
+        // Public submitter — there's no admin session, so the
+        // dashboard would 302 them back to /login. Send them back
+        // to the landing page instead; clear() above already wiped
+        // the local draft so a fresh visit starts clean.
+        route.push("/");
       },
       onError: (err: any) => {
         notifications.show({
