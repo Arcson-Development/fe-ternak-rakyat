@@ -162,19 +162,27 @@ export function useSubmitPeternak() {
         try {
           const token = await ensurePeternakToken();
           const saved = await submitForm(data, token);
-          // Guard against a malformed backend response. If `saved`
-          // lacks an `id` (e.g. backend wrapped the record in a
-          // different envelope than we expected), pushing it into the
-          // store would poison every consumer — `usePeternakList()`
-          // filters as a safety net, but it's cleaner to reject here
-          // so the wizard surfaces the real problem.
-          if (!saved || !saved.id) {
-            throw new Error(
-              "Respons server tidak berisi data peternak yang valid."
-            );
-          }
-          add(saved);
-          return saved;
+          // The backend confirms a 201 with a thin envelope —
+          //   { status: 201, error: false, message: "Form created successfully" }
+          // — and does NOT echo the created record. If we tried to
+          // read data.data we'd get undefined. Synthesize a "saved"
+          // entry from the local payload so the dashboard can show
+          // the new row immediately without a follow-up GET, and
+          // prefer the backend's record if it ever decides to echo
+          // one (future enhancement).
+          const finalSaved: Peternak = saved?.id
+            ? saved
+            : {
+                ...data,
+                id:
+                  data.id ||
+                  `pt-${Date.now()}-${Math.random()
+                    .toString(36)
+                    .slice(2, 8)}`,
+                createdAt: data.createdAt || new Date().toISOString(),
+              };
+          add(finalSaved);
+          return finalSaved;
         } catch (err) {
           const e = toApiError(err);
           throw new Error(e.message);
