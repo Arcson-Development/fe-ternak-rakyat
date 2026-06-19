@@ -236,11 +236,15 @@ export async function submitForm(
     //      (the petenak role uses a different token format).
     //   2. The response interceptor doesn't log the admin out when the
     //      petenak token is rejected — they're independent sessions.
+    //
+    // The backend's auth middleware expects the standard
+    // `Authorization: Bearer <token>` shape; sending the raw JWT
+    // without prefix yields "Token Wasn't Found" 401s.
     const { data } = await axios.post<{ data: Peternak }>(
       `${DOMAIN_API}/form/create`,
       fd,
       {
-        headers: { Authorization: token },
+        headers: { Authorization: `Bearer ${token}` },
         timeout: 60_000, // multipart with photos can be slow
       }
     );
