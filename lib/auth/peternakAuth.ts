@@ -95,14 +95,27 @@ export async function hardcodedPeternakLogin(): Promise<string> {
 }
 
 /**
- * Convenience: return the cached token, calling /auth/peternak/sign-in
- * transparently when there isn't one. Use this right before any
- * call that needs the petenak bearer — the wizard submit AND the
- * public list / detail / delete endpoints all share this single
- * helper, so the token is fetched once per session and reused.
+ * Convenience: always return a fresh token by calling
+ * /auth/peternak/sign-in. The localStorage cache is intentionally
+ * bypassed — we want a fresh bearer on every page load so a
+ * tab that's been open across a server restart (or after a token
+ * rotation) doesn't keep retrying with a stale token and
+ * triggering 401/403 on every API call.
+ *
+ * Concurrent callers within the same render are deduplicated via
+ * an in-memory promise — if three queries fire in parallel they
+ * share one login round-trip, not three.
+ *
+ * Used by the wizard submit AND the public list / detail / delete
+ * endpoints — all four share this single helper, so the token is
+ * fetched once per session and reused.
  */
+let pendingToken: Promise<string> | null = null;
+
 export async function ensurePeternakToken(): Promise<string> {
-  const existing = getPeternakToken();
-  if (existing) return existing;
-  return hardcodedPeternakLogin();
+  if (pendingToken) return pendingToken;
+  pendingToken = hardcodedPeternakLogin().finally(() => {
+    pendingToken = null;
+  });
+  return pendingToken;
 }
