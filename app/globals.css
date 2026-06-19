@@ -240,3 +240,39 @@ a {
 [data-mantine-color-scheme="dark"] .recharts-text {
   fill: #94a3b8 !important;
 }
+
+/* FileUploadCard: hover hint overlay on the preview thumbnail */
+[data-hover-hint="replace"]:hover {
+  background: rgba(15, 23, 42, 0.45) !important;
+}
+
+[data-hover-hint="replace"]:hover .file-upload-hover-pill {
+  opacity: 1 !important;
+}
+
+/* ===== /pendaftaran standalone shell ===== */
+.pendaftaran-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--app-surface-muted);
+}
+
+.pendaftaran-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--app-surface);
+  border-bottom: 1px solid var(--app-border);
+  padding: 12px 24px;
+}
+
+.pendaftaran-content {
+  flex: 1;
+}
+
+@media (max-width: 36em) {
+  .pendaftaran-topbar {
+    padding: 10px 14px;
+  }
+}

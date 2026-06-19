@@ -2,10 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Alert,
-  AppShell,
+  ActionIcon,
   Box,
-  Burger,
   Button,
   Container,
   Group,
@@ -14,24 +12,18 @@ import {
   Text,
   Tooltip,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
 import {
-  IconAlertTriangle,
   IconArrowLeft,
   IconArrowRight,
   IconCheck,
-  IconCircleCheck,
   IconCloudCheck,
   IconDeviceFloppy,
   IconEdit,
-  IconHome,
   IconRestore,
-  IconTrash,
+  IconX,
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { notifications } from "@mantine/notifications";
-import { AppShellHeader } from "../layout/AppShellHeader";
-import { AppShellSidebar } from "../layout/AppShellSidebar";
 import { StepIdentitas } from "./StepIdentitas";
 import { StepKandang } from "./StepKandang";
 import { StepKondisiPeralatan } from "./StepKondisiPeralatan";
@@ -59,7 +51,7 @@ import { useWizardDraft } from "../../hooks/useTernakRakyat/useWizardDraft";
 type IdentitasState = {
   nama: string;
   noKtp: string;
-  ktp: { preview: string | null; name?: string; size?: number };
+  ktp: { id: string; preview: string | null; name?: string; size?: number };
   kategori: KategoriPeternak | "";
   alamat: {
     provinsi: RegionRef | null;
@@ -95,7 +87,6 @@ type Props = {
 
 export function PendaftaranWizard({ initialValue, modeKey = "new" }: Props) {
   const route = useRouter();
-  const [opened, { toggle }] = useDisclosure();
   const isEdit = Boolean(initialValue);
   const mode: Mode = isEdit ? "edit" : "create";
   const update = useTernakStore((s) => s.update);
@@ -128,7 +119,7 @@ export function PendaftaranWizard({ initialValue, modeKey = "new" }: Props) {
     activeStep,
     setActiveStep,
     savedAt,
-    draftAvailable,
+    autoRestoredAt,
     restore,
     clear,
   } = useWizardDraft(modeKey, mode, buildInitial());
@@ -184,6 +175,35 @@ export function PendaftaranWizard({ initialValue, modeKey = "new" }: Props) {
 
   // ---------- submit ----------
 
+  /**
+   * One-shot toast when the draft hook silently restored a saved draft
+   * on mount. Using a ref to track the value we've already toasted for
+   * avoids re-firing the notification on subsequent re-renders.
+   */
+  const toastedRestoreRef = React.useRef<Date | null>(null);
+  React.useEffect(() => {
+    if (!autoRestoredAt) return;
+    if (toastedRestoreRef.current?.getTime() === autoRestoredAt.getTime()) return;
+    toastedRestoreRef.current = autoRestoredAt;
+    notifications.show({
+      title: "Draf dipulihkan otomatis",
+      message: `Data dari ${autoRestoredAt.toLocaleString(
+        "id-ID"
+      )} telah diisi kembali ke formulir.`,
+      color: "blue",
+      icon: <IconCloudCheck size={16} />,
+    });
+  }, [autoRestoredAt]);
+
+  const handleResetDraft = () => {
+    clear();
+    notifications.show({
+      title: "Draf dihapus",
+      message: "Formulir dikosongkan ke nilai awal.",
+      color: "gray",
+    });
+  };
+
   const handleSubmit = () => {
     const finalPayload: Peternak = {
       ...payload,
@@ -235,37 +255,69 @@ export function PendaftaranWizard({ initialValue, modeKey = "new" }: Props) {
   // ---------- layout ----------
 
   return (
-    <AppShell
-      header={{ height: 64 }}
-      navbar={{
-        width: 260,
-        breakpoint: "sm",
-        collapsed: { mobile: !opened },
-      }}
-      padding="md"
-    >
-      <AppShell.Header
-        style={{
-          background: "var(--app-surface)",
-          borderBottom: "1px solid var(--app-border)",
-        }}
-      >
-        <AppShellHeader opened={opened} toggle={toggle} />
-      </AppShell.Header>
+    <Box className="pendaftaran-shell">
+          {/* Minimal top bar — replaces the dashboard AppShell so this page
+              sits at the same visual hierarchy as /login (standalone). */}
+          <Box component="header" className="pendaftaran-topbar">
+            <Group justify="space-between" align="center" wrap="nowrap">
+              <Group gap="sm" wrap="nowrap">
+                <Box
+                  aria-hidden
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 9,
+                    background:
+                      "linear-gradient(135deg, var(--app-primary) 0%, #009450 100%)",
+                    color: "white",
+                    fontWeight: 800,
+                    fontSize: 16,
+                    display: "grid",
+                    placeItems: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  S
+                </Box>
+                <Stack gap={0}>
+                  <Text fz="sm" fw={800} lh={1.1}>
+                    SITERNAK
+                  </Text>
+                  <Text fz="xs" c="dimmed" fw={500} lh={1.2}>
+                    Pengembangan Ternak Rakyat
+                  </Text>
+                </Stack>
+              </Group>
+              <Group gap="xs" wrap="nowrap">
+                <AutosaveIndicator savedAt={savedAt} />
+                <Tooltip label="Kosongkan formulir dan hapus draf tersimpan">
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    size="lg"
+                    onClick={handleResetDraft}
+                    aria-label="Mulai dari awal"
+                  >
+                    <IconRestore size={16} />
+                  </ActionIcon>
+                </Tooltip>
+                <Tooltip label="Tutup dan kembali ke dasbor">
+                  <ActionIcon
+                    variant="light"
+                    color="gray"
+                    size="lg"
+                    onClick={() => route.push("/dashboard")}
+                    aria-label="Tutup"
+                  >
+                    <IconX size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              </Group>
+            </Group>
+          </Box>
 
-      <AppShell.Navbar
-        style={{
-          background: "var(--app-sidebar-bg)",
-          borderRight: "none",
-        }}
-      >
-        <AppShellSidebar onNavigate={() => opened && toggle()} />
-      </AppShell.Navbar>
-
-      <AppShell.Main>
-        <Container size="lg" px={0}>
-          <Stack gap="lg">
-            <Group justify="space-between" align="flex-end" wrap="wrap">
+          <Container size="md" className="pendaftaran-content" py="xl">
+            <Stack gap="lg">
               <Stack gap={4}>
                 <Group gap="xs">
                   <Text
@@ -296,220 +348,149 @@ export function PendaftaranWizard({ initialValue, modeKey = "new" }: Props) {
                 </Text>
               </Stack>
 
-              {/* Autosave indicator */}
-              <AutosaveIndicator savedAt={savedAt} />
-            </Group>
-
-            {/* Restore draft banner */}
-            {draftAvailable && (
-              <Alert
-                variant="light"
-                color="yellow"
-                icon={<IconAlertTriangle size={18} />}
-                title="Ada draf yang belum selesai"
+              <Box
+                p="lg"
+                style={{
+                  background: "var(--app-surface)",
+                  border: "1px solid var(--app-border)",
+                  borderRadius: 12,
+                }}
               >
-                <Group justify="space-between" wrap="wrap" gap="sm">
-                  <Text fz="sm">
-                    Kami menemukan draf yang sebelumnya tersimpan. Mau
-                    lanjutkan dari draf, atau mulai dari awal?
-                  </Text>
-                  <Group gap="xs">
-                    <Button
-                      size="xs"
-                      variant="light"
-                      color="yellow"
-                      leftSection={<IconTrash size={12} />}
-                      onClick={() => {
-                        clear();
-                        notifications.show({
-                          title: "Draf dihapus",
-                          message: "Formulir dikosongkan ke nilai awal.",
-                          color: "gray",
-                        });
-                      }}
-                    >
-                      Mulai dari awal
-                    </Button>
-                    <Button
-                      size="xs"
-                      color="yellow"
-                      leftSection={<IconRestore size={12} />}
-                      onClick={() => {
-                        if (restore()) {
-                          notifications.show({
-                            title: "Draf dipulihkan",
-                            message: "Formulir diisi ulang dari draf.",
-                            color: "green",
-                          });
-                        }
-                      }}
-                    >
-                      Lanjutkan draf
-                    </Button>
-                  </Group>
-                </Group>
-              </Alert>
-            )}
-
-            <Box
-              p="lg"
-              style={{
-                background: "var(--app-surface)",
-                border: "1px solid var(--app-border)",
-                borderRadius: 12,
-              }}
-            >
-              <Stepper
-                active={activeStep}
-                onStepClick={setActiveStep}
-                allowNextStepsSelect={false}
-                size="sm"
-              >
-                <Stepper.Step
-                  label="Identitas"
-                  description="Data diri & alamat"
-                  allowStepSelect={true}
-                />
-                <Stepper.Step
-                  label="Kandang"
-                  description="Lokasi & kapasitas"
-                  allowStepSelect={stepStatus[0]}
-                />
-                <Stepper.Step
-                  label="Kondisi & Peralatan"
-                  description="Foto & rating"
-                  allowStepSelect={stepStatus[0] && stepStatus[1]}
-                />
-                <Stepper.Step
-                  label="Status Operasional"
-                  description="Jenis usaha"
-                  allowStepSelect={
-                    stepStatus[0] && stepStatus[1] && stepStatus[2]
-                  }
-                />
-                <Stepper.Step
-                  label="Review & Submit"
-                  description="Konfirmasi data"
-                  allowStepSelect={
-                    stepStatus[0] &&
-                    stepStatus[1] &&
-                    stepStatus[2] &&
-                    stepStatus[3]
-                  }
-                />
-              </Stepper>
-            </Box>
-
-            <Box>
-              {activeStep === 0 && (
-                <StepIdentitas
-                  value={identitas}
-                  onChange={setIdentitas}
-                  errors={identitasErrors(identitas)}
-                />
-              )}
-              {activeStep === 1 && (
-                <StepKandang
-                  list={kandangList}
-                  onAdd={handleAddKandang}
-                  onRemove={handleRemoveKandang}
-                  onChange={updateKandang}
-                />
-              )}
-              {activeStep === 2 && (
-                <StepKondisiPeralatan
-                  list={kandangList}
-                  onChange={updateKandang}
-                />
-              )}
-              {activeStep === 3 && (
-                <StepOperasional
-                  list={kandangList}
-                  onChange={updateKandang}
-                />
-              )}
-              {activeStep === 4 && (
-                <StepReview
-                  identitas={identitas}
-                  kandangList={kandangList}
-                  onJumpTo={setActiveStep}
-                />
-              )}
-            </Box>
-
-            <Group justify="space-between" align="center" wrap="wrap">
-              <Group gap="xs">
-                <Burger
-                  opened={opened}
-                  onClick={toggle}
-                  hiddenFrom="sm"
+                <Stepper
+                  active={activeStep}
+                  onStepClick={setActiveStep}
+                  allowNextStepsSelect={false}
                   size="sm"
-                />
-                {activeStep > 0 && (
-                  <button
-                    onClick={() => setActiveStep((a) => Math.max(0, a - 1))}
-                    style={navButtonStyle(false)}
-                  >
-                    <IconArrowLeft size={16} /> Kembali
-                  </button>
-                )}
-              </Group>
-
-              <Group gap="xs">
-                {activeStep === 0 && (
-                  <button
-                    onClick={() => route.push("/dashboard")}
-                    style={navButtonStyle(false)}
-                  >
-                    <IconHome size={14} /> Beranda
-                  </button>
-                )}
-
-                {activeStep < 4 && (
-                  <button
-                    disabled={!stepStatus[activeStep as 0 | 1 | 2 | 3]}
-                    onClick={() => setActiveStep((a) => Math.min(4, a + 1))}
-                    style={navButtonStyle(
-                      true,
-                      !stepStatus[activeStep as 0 | 1 | 2 | 3]
-                    )}
-                  >
-                    Lanjut <IconArrowRight size={16} />
-                  </button>
-                )}
-
-                {activeStep === 4 && (
-                  <button
-                    onClick={handleSubmit}
-                    disabled={
-                      submit.isPending ||
-                      !stepStatus[0] ||
-                      !stepStatus[1] ||
-                      !stepStatus[2] ||
-                      !stepStatus[3]
+                >
+                  <Stepper.Step
+                    label="Identitas"
+                    description="Data diri & alamat"
+                    allowStepSelect={true}
+                  />
+                  <Stepper.Step
+                    label="Kandang"
+                    description="Lokasi & kapasitas"
+                    allowStepSelect={stepStatus[0]}
+                  />
+                  <Stepper.Step
+                    label="Kondisi & Peralatan"
+                    description="Foto & rating"
+                    allowStepSelect={stepStatus[0] && stepStatus[1]}
+                  />
+                  <Stepper.Step
+                    label="Status Operasional"
+                    description="Jenis usaha"
+                    allowStepSelect={
+                      stepStatus[0] && stepStatus[1] && stepStatus[2]
                     }
-                    style={submitButtonStyle(
-                      submit.isPending ||
+                  />
+                  <Stepper.Step
+                    label="Review & Submit"
+                    description="Konfirmasi data"
+                    allowStepSelect={
+                      stepStatus[0] &&
+                      stepStatus[1] &&
+                      stepStatus[2] &&
+                      stepStatus[3]
+                    }
+                  />
+                </Stepper>
+              </Box>
+
+              <Box>
+                {activeStep === 0 && (
+                  <StepIdentitas
+                    value={identitas}
+                    onChange={setIdentitas}
+                    errors={identitasErrors(identitas)}
+                  />
+                )}
+                {activeStep === 1 && (
+                  <StepKandang
+                    list={kandangList}
+                    onAdd={handleAddKandang}
+                    onRemove={handleRemoveKandang}
+                    onChange={updateKandang}
+                  />
+                )}
+                {activeStep === 2 && (
+                  <StepKondisiPeralatan
+                    list={kandangList}
+                    onChange={updateKandang}
+                  />
+                )}
+                {activeStep === 3 && (
+                  <StepOperasional
+                    list={kandangList}
+                    onChange={updateKandang}
+                  />
+                )}
+                {activeStep === 4 && (
+                  <StepReview
+                    identitas={identitas}
+                    kandangList={kandangList}
+                    onJumpTo={setActiveStep}
+                  />
+                )}
+              </Box>
+
+              <Group justify="space-between" align="center" wrap="wrap">
+                <Group gap="xs">
+                  {activeStep > 0 && (
+                    <button
+                      onClick={() => setActiveStep((a) => Math.max(0, a - 1))}
+                      style={navButtonStyle(false)}
+                    >
+                      <IconArrowLeft size={16} /> Kembali
+                    </button>
+                  )}
+                </Group>
+
+                <Group gap="xs">
+                  {activeStep < 4 && (
+                    <button
+                      disabled={!stepStatus[activeStep as 0 | 1 | 2 | 3]}
+                      onClick={() => setActiveStep((a) => Math.min(4, a + 1))}
+                      style={navButtonStyle(
+                        true,
+                        !stepStatus[activeStep as 0 | 1 | 2 | 3]
+                      )}
+                    >
+                      Lanjut <IconArrowRight size={16} />
+                    </button>
+                  )}
+
+                  {activeStep === 4 && (
+                    <button
+                      onClick={handleSubmit}
+                      disabled={
+                        submit.isPending ||
                         !stepStatus[0] ||
                         !stepStatus[1] ||
                         !stepStatus[2] ||
                         !stepStatus[3]
-                    )}
-                  >
-                    {submit.isPending
-                      ? "Menyimpan..."
-                      : isEdit
-                      ? "Simpan Perubahan"
-                      : "Simpan Pendaftaran"}
-                  </button>
-                )}
+                      }
+                      style={submitButtonStyle(
+                        submit.isPending ||
+                          !stepStatus[0] ||
+                          !stepStatus[1] ||
+                          !stepStatus[2] ||
+                          !stepStatus[3]
+                      )}
+                    >
+                      {submit.isPending
+                        ? "Menyimpan..."
+                        : isEdit
+                        ? "Simpan Perubahan"
+                        : "Simpan Pendaftaran"}
+                    </button>
+                  )}
+                </Group>
               </Group>
-            </Group>
-          </Stack>
-        </Container>
-      </AppShell.Main>
-    </AppShell>
-  );
+            </Stack>
+          </Container>
+        </Box>
+      );
 }
 
 // ---------- autosave indicator ----------

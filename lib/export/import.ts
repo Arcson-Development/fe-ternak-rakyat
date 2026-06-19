@@ -181,7 +181,7 @@ export function buildPeternakFromRow(
     kelurahan: null;
     detail: string;
   };
-  ktp: { fileName: string; preview: string | null; size: number | null };
+  ktp: { id: string; preview: string | null };
   kandang: [];
   createdAt: string;
 } {
@@ -205,7 +205,7 @@ export function buildPeternakFromRow(
       kelurahan: null,
       detail: row["Alamat Detail"] || "",
     },
-    ktp: { fileName: "", preview: null, size: null },
+    ktp: { id: crypto.randomUUID(), preview: null },
     kandang: [],
     createdAt: row["Tanggal Daftar"]
       ? new Date(row["Tanggal Daftar"]).toISOString()

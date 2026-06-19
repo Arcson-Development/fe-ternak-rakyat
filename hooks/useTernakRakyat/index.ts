@@ -9,38 +9,79 @@ import {
 } from "./data/regions";
 import { useTernakStore } from "./store/ternakStore";
 import { DOMAIN_API } from "../../utils/contants/env";
-import { createPeternak, submitForm, toApiError } from "../../lib/api";
+import {
+  createPeternak,
+  fetchKabupaten,
+  fetchKecamatan,
+  fetchKelurahan,
+  fetchProvinsi,
+  submitForm,
+  toApiError,
+} from "../../lib/api";
 import { ensurePeternakToken } from "../../lib/auth/peternakAuth";
-import type { Peternak } from "./types";
+import type { Peternak, RegionRef } from "./types";
 
 /**
- * Public surface for the Ternak Rakyat feature. Mirrors the pattern of
- * the old useRegion/useRegister hooks from the template, but tailored
- * for the livestock domain.
+ * Public surface for the Ternak Rakyat feature.
  *
- * Region queries use `useQuery` so the form gets loading/error states for
- * free; the underlying data is static so we can also expose sync
- * helpers. The submission mutation writes to the in-memory + persisted
- * Zustand store when no API is configured, or POSTs to the real backend
- * when NEXT_PUBLIC_DOMAIN_API is set.
+ * Region data comes from the backend (`/wilayah/...`) via React Query.
+ * If the request fails (network down, 5xx, CORS, etc.) we transparently
+ * fall back to the bundled dataset in `data/regions.ts` so the wizard
+ * still works offline or during a backend redeploy. The first successful
+ * API call also warms React Query's cache for the rest of the session.
+ *
+ * Submission goes through `useSubmitPeternak` below — it POSTs the
+ * wizard payload to `/form/create` with the field names documented in
+ * the Postman collection, then mirrors the saved record into the
+ * Zustand store so the dashboard list renders without a refetch.
  */
 
-const REGION_STALE_TIME = 60 * 60 * 1000; // 1h - regions never change in a session
+const REGION_STALE_TIME = 60 * 60 * 1000; // 1h — regions change rarely
 
 const USE_REAL_API = Boolean(DOMAIN_API);
 
+// Flatten helpers — bundled data is nested (Province → Regency[] → ...)
+// but the dropdowns only need { id, name }.
+const toRegionRef = (p: { id: string; name: string }): RegionRef => ({
+  id: p.id,
+  name: p.name,
+});
+
 export function useProvinsi() {
-  return useQuery({
-    queryKey: ["region", "provinsi"],
-    queryFn: () => Promise.resolve(getProvinsi()),
+  return useQuery<RegionRef[]>({
+    queryKey: ["wilayah", "provinsi"],
+    queryFn: async () => {
+      try {
+        return await fetchProvinsi();
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          "[useProvinsi] Endpoint failed, using bundled data:",
+          err
+        );
+        return getProvinsi().map(toRegionRef);
+      }
+    },
     staleTime: REGION_STALE_TIME,
   });
 }
 
 export function useKabupaten(provinsiId: string | null) {
-  return useQuery({
-    queryKey: ["region", "kabupaten", provinsiId],
-    queryFn: () => Promise.resolve(getKabupaten(provinsiId)),
+  return useQuery<RegionRef[]>({
+    queryKey: ["wilayah", "kabupaten", provinsiId],
+    queryFn: async () => {
+      if (!provinsiId) return [];
+      try {
+        return await fetchKabupaten(provinsiId);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[useKabupaten] Endpoint failed for ${provinsiId}, using bundled data:`,
+          err
+        );
+        return getKabupaten(provinsiId).map(toRegionRef);
+      }
+    },
     enabled: !!provinsiId,
     staleTime: REGION_STALE_TIME,
   });
@@ -50,9 +91,21 @@ export function useKecamatan(
   provinsiId: string | null,
   kabupatenId: string | null
 ) {
-  return useQuery({
-    queryKey: ["region", "kecamatan", provinsiId, kabupatenId],
-    queryFn: () => Promise.resolve(getKecamatan(provinsiId, kabupatenId)),
+  return useQuery<RegionRef[]>({
+    queryKey: ["wilayah", "kecamatan", provinsiId, kabupatenId],
+    queryFn: async () => {
+      if (!kabupatenId) return [];
+      try {
+        return await fetchKecamatan(kabupatenId);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[useKecamatan] Endpoint failed for ${kabupatenId}, using bundled data:`,
+          err
+        );
+        return getKecamatan(provinsiId, kabupatenId).map(toRegionRef);
+      }
+    },
     enabled: !!kabupatenId,
     staleTime: REGION_STALE_TIME,
   });
@@ -63,10 +116,23 @@ export function useKelurahan(
   kabupatenId: string | null,
   kecamatanId: string | null
 ) {
-  return useQuery({
-    queryKey: ["region", "kelurahan", provinsiId, kabupatenId, kecamatanId],
-    queryFn: () =>
-      Promise.resolve(getKelurahan(provinsiId, kabupatenId, kecamatanId)),
+  return useQuery<RegionRef[]>({
+    queryKey: ["wilayah", "kelurahan", provinsiId, kabupatenId, kecamatanId],
+    queryFn: async () => {
+      if (!kecamatanId) return [];
+      try {
+        return await fetchKelurahan(kecamatanId);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[useKelurahan] Endpoint failed for ${kecamatanId}, using bundled data:`,
+          err
+        );
+        return getKelurahan(provinsiId, kabupatenId, kecamatanId).map(
+          toRegionRef
+        );
+      }
+    },
     enabled: !!kecamatanId,
     staleTime: REGION_STALE_TIME,
   });

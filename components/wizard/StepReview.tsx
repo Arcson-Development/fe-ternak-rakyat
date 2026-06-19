@@ -35,7 +35,7 @@ import type { RegionRef } from "../../hooks/useTernakRakyat";
 type Identitas = {
   nama: string;
   noKtp: string;
-  ktp: { preview: string | null; name?: string };
+  ktp: { id: string; preview: string | null; name?: string };
   kategori: KategoriPeternak | "";
   alamat: {
     provinsi: RegionRef | null;

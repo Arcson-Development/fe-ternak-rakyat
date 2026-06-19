@@ -38,7 +38,7 @@ type Alamat = {
 type Identitas = {
   nama: string;
   noKtp: string;
-  ktp: { preview: string | null; name?: string; size?: number };
+  ktp: { id: string; preview: string | null; name?: string; size?: number };
   kategori: KategoriPeternak | "";
   alamat: Alamat;
 };

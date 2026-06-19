@@ -24,6 +24,12 @@ export type Kemitraan =
   | "super_unggas_jaya";
 
 export interface PhotoRef {
+  /**
+   * Stable UUID generated at file-drop time. Used as the IndexedDB key
+   * so the actual File bytes survive a page refresh — only the in-memory
+   * blob URL dies when the document is torn down.
+   */
+  id: string;
   /** object URL or data URL for preview; null means no photo yet. */
   preview: string | null;
   /** Original filename (if user picked a file). */
@@ -34,6 +40,8 @@ export interface PhotoRef {
    * The actual File object captured from the dropzone. Not persisted to
    * localStorage (File is not serializable) — it's only kept in memory
    * long enough for the wizard to submit the form via multipart/form-data.
+   * The matching bytes are mirrored to IndexedDB under `id` so a refresh
+   * can rehydrate `preview` without forcing the user to re-attach.
    */
   file?: File;
 }
@@ -154,7 +162,7 @@ export const KATEGORI_LABEL: Record<KategoriPeternak | "", string> = {
   ayam_petelur: "Ayam Petelur (Layer)",
 };
 
-export const emptyPhoto = (): PhotoRef => ({ preview: null });
+export const emptyPhoto = (): PhotoRef => ({ id: crypto.randomUUID(), preview: null });
 
 export const emptyLokasi = (): Lokasi => ({ lat: null, lng: null, alamat: "" });
 

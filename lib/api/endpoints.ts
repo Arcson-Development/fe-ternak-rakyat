@@ -27,38 +27,93 @@ import {
  */
 
 // ---------- region ----------
+//
+// Endpoint contract (from Ternak Rakyat.postman_collection.json):
+//   GET /wilayah/provinsi
+//     → { status, error, message, data: [{ provinsi_id, name, alt_name, latitude, longitude }] }
+//   GET /wilayah/kabupaten/{provinsi_id}
+//     → { ..., data: [{ kabupaten_id, provinsi_id, name, alt_name, ... }] }
+//   GET /wilayah/kecamatan/{kabupaten_id}
+//     → { ..., data: [{ kecamatan_id, kabupaten_id, name, ... }] }
+//   GET /wilayah/kelurahan/{kecamatan_id}
+//     → { ..., data: [{ kelurahan_id, kecamatan_id, name, ... }] }
+//
+// IDs are returned per-level (provinsi_id / kabupaten_id / ...) — we
+// normalize them to RegionRef `{ id, name }` so the rest of the app can
+// treat all four levels uniformly.
+
+type WilayahResponse<T> = {
+  status: number;
+  error: boolean;
+  message: string;
+  data: T[];
+};
+
+type ProvinsiItem = {
+  provinsi_id: number;
+  name: string;
+  alt_name?: string;
+  latitude?: string;
+  longitude?: string;
+};
+type KabupatenItem = {
+  kabupaten_id: number;
+  provinsi_id: number;
+  name: string;
+  alt_name?: string;
+  latitude?: string;
+  longitude?: string;
+};
+type KecamatanItem = {
+  kecamatan_id: number;
+  kabupaten_id: number;
+  name: string;
+  alt_name?: string;
+  latitude?: string;
+  longitude?: string;
+};
+type KelurahanItem = {
+  kelurahan_id: number;
+  kecamatan_id: number;
+  name: string;
+  alt_name?: string;
+  latitude?: string;
+  longitude?: string;
+};
+
+function toRegionRef(item: any, idKey: string): RegionRef {
+  return { id: String(item[idKey] ?? ""), name: String(item.name ?? "") };
+}
 
 export async function fetchProvinsi(): Promise<RegionRef[]> {
-  const { data } = await api.get<{ data: RegionRef[] }>("/region/provinsi");
-  return data.data;
+  const { data } = await api.get<WilayahResponse<ProvinsiItem>>(
+    "/wilayah/provinsi"
+  );
+  return (data.data ?? []).map((p) => toRegionRef(p, "provinsi_id"));
 }
 
 export async function fetchKabupaten(provinsiId: string): Promise<RegionRef[]> {
-  const { data } = await api.get<{ data: RegionRef[] }>(
-    `/region/kabupaten?provinsiId=${provinsiId}`
+  if (!provinsiId) return [];
+  const { data } = await api.get<WilayahResponse<KabupatenItem>>(
+    `/wilayah/kabupaten/${encodeURIComponent(provinsiId)}`
   );
-  return data.data;
+  return (data.data ?? []).map((k) => toRegionRef(k, "kabupaten_id"));
 }
 
-export async function fetchKecamatan(
-  provinsiId: string,
-  kabupatenId: string
-): Promise<RegionRef[]> {
-  const { data } = await api.get<{ data: RegionRef[] }>(
-    `/region/kecamatan?provinsiId=${provinsiId}&kabupatenId=${kabupatenId}`
+export async function fetchKecamatan(kabupatenId: string): Promise<RegionRef[]> {
+  if (!kabupatenId) return [];
+  const { data } = await api.get<WilayahResponse<KecamatanItem>>(
+    `/wilayah/kecamatan/${encodeURIComponent(kabupatenId)}`
   );
-  return data.data;
+  return (data.data ?? []).map((k) => toRegionRef(k, "kecamatan_id"));
 }
 
-export async function fetchKelurahan(
-  provinsiId: string,
-  kabupatenId: string,
-  kecamatanId: string
-): Promise<RegionRef[]> {
-  const { data } = await api.get<{ data: RegionRef[] }>(
-    `/region/kelurahan?provinsiId=${provinsiId}&kabupatenId=${kabupatenId}&kecamatanId=${kecamatanId}`
+export async function fetchKelurahan(kecamatanId: string): Promise<RegionRef[]> {
+  if (!kecamatanId) return [];
+  const { data } = await api.get<WilayahResponse<KelurahanItem>>(
+    `/wilayah/kelurahan/${encodeURIComponent(kecamatanId)}`
   );
-  return data.data;
+  return (data.data ?? []).map((k) => toRegionRef(k, "kelurahan_id"));
 }
 
 // ---------- master data ----------
