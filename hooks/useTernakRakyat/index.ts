@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import {
   getKabupaten,
   getKecamatan,
@@ -161,6 +162,17 @@ export function useSubmitPeternak() {
         try {
           const token = await ensurePeternakToken();
           const saved = await submitForm(data, token);
+          // Guard against a malformed backend response. If `saved`
+          // lacks an `id` (e.g. backend wrapped the record in a
+          // different envelope than we expected), pushing it into the
+          // store would poison every consumer — `usePeternakList()`
+          // filters as a safety net, but it's cleaner to reject here
+          // so the wizard surfaces the real problem.
+          if (!saved || !saved.id) {
+            throw new Error(
+              "Respons server tidak berisi data peternak yang valid."
+            );
+          }
           add(saved);
           return saved;
         } catch (err) {
@@ -179,6 +191,11 @@ export function useSubmitPeternak() {
           kategori: data.kategori,
           kandang: data.kandang,
         });
+        if (!saved || !saved.id) {
+          throw new Error(
+            "Respons server tidak berisi data peternak yang valid."
+          );
+        }
         add(saved);
         return saved;
       } catch (err) {
@@ -189,8 +206,23 @@ export function useSubmitPeternak() {
   });
 }
 
-export function usePeternakList() {
-  return useTernakStore((s) => s.peternak);
+/**
+ * Returns the list of all registered Peternak, with any undefined /
+ * invalid entries filtered out as a safety net. Defensive because the
+ * dashboard's command palette (`SpotlightProvider`) and many list pages
+ * call `.id` on each item, and a stray `undefined` would crash the
+ * whole layout (one bad `add()` in the store breaks every page).
+ *
+ * The filter is memoised on the raw store reference so consumers that
+ * compare the result with `===` (React, useEffect deps) don't see a
+ * "new" array on every render.
+ */
+export function usePeternakList(): Peternak[] {
+  const list = useTernakStore((s) => s.peternak);
+  return useMemo(
+    () => list.filter((p): p is Peternak => Boolean(p && p.id)),
+    [list]
+  );
 }
 
 /** Lets the UI show which mode we're in (good for the Settings page). */
