@@ -18,7 +18,8 @@ import {
   KONDISI_LABEL,
   STATUS_OPERASIONAL_LABEL,
   kemitraanLabel,
-  usePeternakList,
+  useFormById,
+  formItemToPeternak,
   type Peternak,
 } from "../../../../../hooks/useTernakRakyat";
 import { useThemeStore } from "../../../../../hooks/useTheme";
@@ -34,18 +35,21 @@ import { useThemeStore } from "../../../../../hooks/useTheme";
 export default function PeternakPrintPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const list = usePeternakList();
   const mode = useThemeStore((s) => s.mode);
   const resolved = useThemeStore((s) => s.resolved);
 
+  // Pull directly from the backend (matches /dashboard/peternak and
+  // /pendaftaran/daftar/[id]) so a print opened in a fresh tab —
+  // or shared with a colleague — has the data even if the local
+  // Zustand store is empty.
+  const { data: formData, isLoading } = useFormById(
+    params.id as string | undefined
+  );
   const [peternak, setPeternak] = useState<Peternak | null>(null);
-  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const found = list.find((p) => p.id === params.id) ?? null;
-    setPeternak(found);
-    setLoaded(true);
-  }, [params.id, list]);
+    setPeternak(formData ? formItemToPeternak(formData) : null);
+  }, [formData]);
 
   useEffect(() => {
     // Force light mode for print so we get a clean white background
@@ -61,7 +65,7 @@ export default function PeternakPrintPage() {
     if (typeof window !== "undefined") window.print();
   };
 
-  if (!loaded) {
+  if (isLoading) {
     return (
       <Center mih="100vh">
         <Text fz="sm" c="dimmed">Memuat...</Text>
@@ -283,6 +287,39 @@ export default function PeternakPrintPage() {
           Dokumen ini dicetak secara otomatis dari SITERNAK. Untuk
           verifikasi keaslian, hubungi administrator.
         </Text>
+
+        {/* Signature footer */}
+        <Box
+          mt="xl"
+          pt="md"
+          style={{ borderTop: "1px solid #e2e8f0" }}
+        >
+          <Group justify="space-between" align="flex-end" wrap="nowrap">
+            <Stack gap={2}>
+              <Text fz="xs" c="#64748b" tt="uppercase" fw={600} style={{ letterSpacing: "0.06em" }}>
+                Peternak
+              </Text>
+              <Box style={{ width: 180, borderBottom: "1px solid #0f172a", height: 50 }} />
+              <Text fz="xs" c="#94a3b8" mt={2}>
+                ({nama})
+              </Text>
+            </Stack>
+            <Stack gap={2} align="center">
+              <Text fz="xs" c="#64748b">
+                {new Date().toLocaleDateString("id-ID", {
+                  day: "2-digit", month: "long", year: "numeric",
+                })}
+              </Text>
+              <Text fz="xs" c="#64748b" tt="uppercase" fw={600} style={{ letterSpacing: "0.06em" }}>
+                Administrator SITERNAK
+              </Text>
+              <Box style={{ width: 180, borderBottom: "1px solid #0f172a", height: 50 }} />
+              <Text fz="xs" c="#94a3b8" mt={2}>
+                (____________________)
+              </Text>
+            </Stack>
+          </Group>
+        </Box>
       </Box>
     </Box>
   );
