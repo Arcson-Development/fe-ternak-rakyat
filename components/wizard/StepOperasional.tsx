@@ -156,8 +156,19 @@ export function StepOperasional({ list, onChange }: Props) {
                           value={k.jenisUsaha}
                           onChange={(v) => {
                             const next = v as JenisUsaha;
-                            setOp("jenisUsaha", next);
-                            if (next === "mandiri") setOp("kemitraan", "");
+                            // Single atomic update. Calling `setOp`
+                            // twice in a row used to fight itself: both
+                            // calls spread the same stale `k` from the
+                            // closure, so the second call (clearing
+                            // `kemitraan`) would also overwrite
+                            // `jenisUsaha` back to "" — making the
+                            // "Mandiri" click look like it did nothing.
+                            onChange(k.id, {
+                              ...k,
+                              jenisUsaha: next,
+                              kemitraan:
+                                next === "mandiri" ? "" : k.kemitraan,
+                            } as any);
                           }}
                           data={[
                             { value: "mandiri", label: JENIS_USAHA_LABEL.mandiri },
