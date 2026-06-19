@@ -35,6 +35,7 @@ import {
   IconCircleNumber3,
   IconCircleNumber4,
   IconCircleNumber5,
+  IconList,
   IconLockSquare,
   IconMail,
   IconMapPin,
@@ -197,6 +198,15 @@ export default function LandingPage() {
                 onClick={guideHandlers.open}
               >
                 Petunjuk Penggunaan
+              </Button>
+              <Button
+                size="md"
+                variant="light"
+                color="teal"
+                leftSection={<IconList size={16} />}
+                onClick={() => router.push("/pendaftaran/daftar")}
+              >
+                Lihat Pendaftaran
               </Button>
               <Button
                 size="md"
