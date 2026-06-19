@@ -38,11 +38,16 @@ import {
 } from "../../../hooks/useTernakRakyat";
 
 /**
- * Public list of every submitted registration that lives in the
- * local Zustand store. Reads through `usePeternakList()` — the SAME
- * data source the admin's `/dashboard/peternak` page uses — so
- * visitors who just submitted see their row, and any submissions
- * persisted to localStorage from a previous visit reappear here.
+ * Public list of every submitted registration. Reads through
+ * `useFormList` — the SAME hook the admin's `/dashboard/peternak`
+ * page uses — backed by `GET /form/get-all?page=&limit=&search=`
+ * on the backend. Authentication reuses `ensurePeternakToken()`,
+ * the same petenak bearer the wizard's `submitForm` call uses,
+ * so a single login is shared between submit + browse.
+ *
+ * Each row is converted to a `Peternak` via `formItemToPeternak`
+ * so the rendering, status badges and kemitraan labels stay
+ * consistent with the rest of the dashboard.
  *
  * Click a row to drill into the detail page at
  * `/pendaftaran/daftar/[id]`.
