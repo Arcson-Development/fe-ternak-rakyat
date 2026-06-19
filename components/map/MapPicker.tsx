@@ -3,6 +3,10 @@
 import React, { useEffect, useRef } from "react";
 import { Box } from "@mantine/core";
 
+// MUST come before the dynamic `import("leaflet")` below — patches
+// `L.Icon.Default` so marker images resolve under webpack.
+import "./leafletInit";
+
 type Lokasi = { lat: number | null; lng: number | null; alamat: string };
 
 type Props = {

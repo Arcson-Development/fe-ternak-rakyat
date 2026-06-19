@@ -4,6 +4,10 @@ import React, { useEffect, useRef } from "react";
 import { Box, Center, Stack, Text } from "@mantine/core";
 import { IconMap2 } from "@tabler/icons-react";
 
+// Patches `L.Icon.Default` before any marker is created — must run
+// before the dynamic leaflet import further down.
+import "./leafletInit";
+
 type Lokasi = { lat: number; lng: number; label: string };
 
 type Props = {
