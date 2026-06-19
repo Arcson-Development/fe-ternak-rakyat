@@ -7,7 +7,6 @@ import {
   IconLayoutDashboard,
   IconUserPlus,
   IconUsers,
-  IconBuildingWarehouse,
   IconChartBar,
 } from "@tabler/icons-react";
 import type { Icon } from "@tabler/icons-react";
@@ -22,7 +21,6 @@ const ITEMS: Item[] = [
   { href: "/dashboard", label: "Beranda", icon: IconLayoutDashboard },
   { href: "/pendaftaran", label: "Daftar", icon: IconUserPlus },
   { href: "/dashboard/peternak", label: "Peternak", icon: IconUsers },
-  { href: "/dashboard/kandang", label: "Kandang", icon: IconBuildingWarehouse },
   { href: "/dashboard/laporan", label: "Laporan", icon: IconChartBar },
 ];
 

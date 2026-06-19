@@ -162,10 +162,7 @@ Kemitraan (hardcoded untuk saat ini, backend belum tersedia):
 - /dashboard/peternak  - List + filter
 - /dashboard/peternak/:id         - Detail (tabs: Identitas, Kandang, Dokumen, Timeline)
 - /dashboard/peternak/:id/print   - Print-friendly view
-- /dashboard/kandang   - List semua kandang
-- /dashboard/kandang/:peternakId/:kandangId - Detail kandang + map
 - /dashboard/laporan   - Export Excel/CSV + bulk import
-- /dashboard/aktivitas - Activity feed
 - /dashboard/pengaturan - Theme, notif, sound
 - /dashboard/bantuan   - FAQ
 

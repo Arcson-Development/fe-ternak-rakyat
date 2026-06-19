@@ -7,11 +7,9 @@ import {
   IconLayoutDashboard,
   IconUserPlus,
   IconUsers,
-  IconClipboardList,
   IconChartBar,
   IconSettings,
   IconHelp,
-  IconBuildingWarehouse,
 } from "@tabler/icons-react";
 import type { Icon } from "@tabler/icons-react";
 
@@ -27,9 +25,7 @@ const ITEMS: Item[] = [
   { href: "/dashboard", label: "Ringkasan", icon: IconLayoutDashboard, group: "Utama" },
   { href: "/pendaftaran", label: "Pendaftaran", icon: IconUserPlus, group: "Utama" },
   { href: "/dashboard/peternak", label: "Daftar Peternak", icon: IconUsers, group: "Utama" },
-  { href: "/dashboard/kandang", label: "Daftar Kandang", icon: IconBuildingWarehouse, group: "Master" },
   { href: "/dashboard/laporan", label: "Laporan", icon: IconChartBar, group: "Master" },
-  { href: "/dashboard/aktivitas", label: "Aktivitas", icon: IconClipboardList, group: "Master" },
   { href: "/dashboard/pengaturan", label: "Pengaturan", icon: IconSettings, group: "Lainnya" },
   { href: "/dashboard/bantuan", label: "Bantuan", icon: IconHelp, group: "Lainnya" },
 ];
