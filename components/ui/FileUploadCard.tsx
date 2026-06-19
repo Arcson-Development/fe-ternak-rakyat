@@ -19,6 +19,7 @@ import {
 } from "@tabler/icons-react";
 import type { PhotoRef } from "../../hooks/useTernakRakyat/types";
 import { putPhoto, deletePhoto } from "../../utils/lib/idbPhotoStore";
+import { safeRandomUUID } from "../../utils/lib/safeUuid";
 
 type Props = {
   label: string;
@@ -111,7 +112,7 @@ export function FileUploadCard({
     // Mirror the File into IndexedDB so a page refresh doesn't wipe the
     // preview. If the write fails (quota, private mode) we still show
     // the in-memory blob URL — the photo just won't survive reload.
-    const newId = crypto.randomUUID();
+    const newId = safeRandomUUID();
     putPhoto(newId, f).catch((err) => {
       // eslint-disable-next-line no-console
       console.warn(

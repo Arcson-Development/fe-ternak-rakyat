@@ -1,6 +1,7 @@
 // =============================================================================
 // Domain types untuk SITERNAK
 // =============================================================================
+import { safeRandomUUID } from "../../utils/lib/safeUuid";
 
 export type KategoriPeternak = "ayam_pedaging" | "ayam_petelur";
 
@@ -162,7 +163,7 @@ export const KATEGORI_LABEL: Record<KategoriPeternak | "", string> = {
   ayam_petelur: "Ayam Petelur (Layer)",
 };
 
-export const emptyPhoto = (): PhotoRef => ({ id: crypto.randomUUID(), preview: null });
+export const emptyPhoto = (): PhotoRef => ({ id: safeRandomUUID(), preview: null });
 
 export const emptyLokasi = (): Lokasi => ({ lat: null, lng: null, alamat: "" });
 
@@ -180,7 +181,7 @@ export const emptyPeralatan = (): PeralatanKandang => ({
 });
 
 export const makeKandang = (): Kandang => ({
-  id: crypto.randomUUID(),
+  id: safeRandomUUID(),
   nama: "",
   lokasi: emptyLokasi(),
   kapasitas: "",
@@ -201,7 +202,7 @@ export const emptyAlamat = (): Alamat => ({
 });
 
 export const emptyPeternak = (): Peternak => ({
-  id: crypto.randomUUID(),
+  id: safeRandomUUID(),
   createdAt: new Date().toISOString(),
   nama: "",
   noKtp: "",

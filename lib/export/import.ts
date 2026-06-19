@@ -8,6 +8,7 @@ import {
   STATUS_OPERASIONAL_LABEL,
   JENIS_USAHA_LABEL,
 } from "../../hooks/useTernakRakyat";
+import { safeRandomUUID } from "../../utils/lib/safeUuid";
 
 /**
  * Read an .xlsx file and return the first sheet as rows.
@@ -205,7 +206,7 @@ export function buildPeternakFromRow(
       kelurahan: null,
       detail: row["Alamat Detail"] || "",
     },
-    ktp: { id: crypto.randomUUID(), preview: null },
+    ktp: { id: safeRandomUUID(), preview: null },
     kandang: [],
     createdAt: row["Tanggal Daftar"]
       ? new Date(row["Tanggal Daftar"]).toISOString()

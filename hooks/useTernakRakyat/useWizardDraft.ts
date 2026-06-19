@@ -7,6 +7,7 @@ import {
   putPhoto,
   deletePhotos,
 } from "../../utils/lib/idbPhotoStore";
+import { safeRandomUUID } from "../../utils/lib/safeUuid";
 
 /**
  * Local autosave for the wizard. The user's progress is written to
@@ -78,7 +79,7 @@ function collectLivePhotos(payload: Peternak): PhotoRef[] {
  * preserved so restore() can rehydrate the File from IndexedDB.
  */
 function sanitizePhoto(photo: PhotoRef | undefined): PhotoRef {
-  if (!photo) return { id: crypto.randomUUID(), preview: null };
+  if (!photo) return { id: safeRandomUUID(), preview: null };
   return {
     id: photo.id,
     preview: null,
