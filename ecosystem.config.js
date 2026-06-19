@@ -38,12 +38,12 @@ module.exports = {
       listen_timeout: 10000,
       env: {
         NODE_ENV: "production",
-        PORT: 3000,
+        PORT: 6091,
         HOSTNAME: "0.0.0.0",
       },
       env_production: {
         NODE_ENV: "production",
-        PORT: 3000,
+        PORT: 6091,
         HOSTNAME: "0.0.0.0",
         NEXT_PUBLIC_DOMAIN: "http://103.245.39.75:6090",
         NEXT_PUBLIC_DOMAIN_API: "http://103.245.39.75:6090/v1",

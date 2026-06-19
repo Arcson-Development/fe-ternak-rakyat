@@ -51,7 +51,7 @@ switch ke axios.
     npm install --legacy-peer-deps
     npm run dev
 
-Buka http://localhost:3000. Login dengan admin / admin123.
+Buka http://localhost:6091. Login dengan admin / admin123.
 
 Build production:
 
