@@ -6,7 +6,7 @@
  *   - Stop:   pm2 stop ecosystem.config.js
  *   - Reload: pm2 reload ecosystem.config.js
  *   - Delete: pm2 delete ecosystem.config.js
- *   - Logs:   pm2 logs siternak-prod
+ *   - Logs:   pm2 logs ternak_rakyat_fe
  *   - Monitor: pm2 monit
  *
  * Notes:
@@ -24,7 +24,7 @@ const PROJECT_ROOT = __dirname;
 module.exports = {
   apps: [
     {
-      name: "siternak-prod",
+      name: "ternak_rakyat_fe",
       script: "node_modules/next/dist/bin/next",
       args: "start",
       cwd: PROJECT_ROOT,
