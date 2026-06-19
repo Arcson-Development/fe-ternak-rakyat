@@ -12,12 +12,12 @@ import {
 } from "@mantine/core";
 import { IconArrowLeft, IconPrinter } from "@tabler/icons-react";
 import {
-  DAFTAR_KEMITRAAN,
   JENIS_USAHA_LABEL,
   KAPASITAS_LABEL,
   KATEGORI_LABEL,
   KONDISI_LABEL,
   STATUS_OPERASIONAL_LABEL,
+  kemitraanLabel,
   usePeternakList,
   type Peternak,
 } from "../../../../../hooks/useTernakRakyat";
@@ -244,10 +244,7 @@ export default function PeternakPrintPage() {
                     {k.jenisUsaha === "kemitraan" && (
                       <Field
                         label="Nama Kemitraan"
-                        value={
-                          k.kemitraan ||
-                          (DAFTAR_KEMITRAAN.find((k2) => true) ?? "—")
-                        }
+                        value={kemitraanLabel(k.kemitraan)}
                         full
                       />
                     )}

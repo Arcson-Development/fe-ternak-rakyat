@@ -7,6 +7,7 @@ import {
   KATEGORI_LABEL,
   KONDISI_LABEL,
   STATUS_OPERASIONAL_LABEL,
+  kemitraanLabel,
   type Kandang,
   type Peternak,
 } from "../../hooks/useTernakRakyat";
@@ -280,7 +281,7 @@ export function buildLaporanWorkbook(peternak: Peternak[]): XLSX.WorkBook {
         k.jenisUsaha
           ? labelOf(k.jenisUsaha, JENIS_USAHA_LABEL)
           : "—",
-        k.kemitraan || "—",
+        kemitraanLabel(k.kemitraan),
       ]);
     });
   });
@@ -374,7 +375,7 @@ export function buildSinglePeternakWorkbook(p: Peternak): XLSX.WorkBook {
       k.jenisUsaha
         ? labelOf(k.jenisUsaha, JENIS_USAHA_LABEL)
         : "—",
-      k.kemitraan || "—",
+      kemitraanLabel(k.kemitraan),
     ]);
   });
   const wsK = XLSX.utils.aoa_to_sheet(kRows);
@@ -429,7 +430,7 @@ export function buildKandangWorkbook(
       k.jenisUsaha
         ? labelOf(k.jenisUsaha, JENIS_USAHA_LABEL)
         : "—",
-      k.kemitraan || "—",
+      kemitraanLabel(k.kemitraan),
       k.lokasi.lat ?? "—",
       k.lokasi.lng ?? "—",
       labelOf(k.kondisi.dinding.kondisi, KONDISI_LABEL),
