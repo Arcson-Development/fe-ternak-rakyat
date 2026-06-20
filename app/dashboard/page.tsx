@@ -19,6 +19,7 @@ import {
   IconUsers,
   IconBuildingWarehouse,
   IconArrowRight,
+  IconCalendarPlus,
   IconClipboardCheck,
   IconClock,
   IconActivityHeartbeat,
@@ -29,7 +30,7 @@ import { DashboardSkeleton } from "../../components/skeletons";
 import { StatCard } from "../../components/ui/StatCard";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { EmptyState } from "../../components/ui/EmptyState";
-import { usePeternakList } from "../../hooks/useTernakRakyat";
+import { useFormList, formItemToPeternak } from "../../hooks/useTernakRakyat";
 import {
   JENIS_USAHA_LABEL,
   KATEGORI_LABEL,
@@ -65,7 +66,18 @@ function DashboardContent() {
     return () => clearTimeout(t);
   }, []);
   const router = useRouter();
-  const list = usePeternakList();
+  // Pull a representative sample (200 most-recent records) directly
+  // from the backend so the overview stats reflect the server's
+  // view, not whatever happens to be in the local store. For the
+  // current dataset (11 rows) this is the entire population. The
+  // "Pendaftaran minggu ini" stat and the 14-day trend both need
+  // createdAt values, which the backend provides via the FormItem
+  // envelope.
+  const { data: formList } = useFormList(1, 200, "");
+  const list: import("../../hooks/useTernakRakyat").Peternak[] = useMemo(
+    () => (formList?.data ?? []).map(formItemToPeternak),
+    [formList]
+  );
 
   const stats = useMemo(() => {
     let totalKandang = 0;
@@ -75,8 +87,15 @@ function DashboardContent() {
     let totalAyam = 0;
     let broiler = 0;
     let layer = 0;
+    let thisWeek = 0;
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
 
     list.forEach((p) => {
+      // Weekly counter — a new submission counts toward "minggu ini"
+      // if createdAt is within the last 7 days.
+      if (new Date(p.createdAt) >= weekAgo) thisWeek++;
+
       p.kandang.forEach((k) => {
         totalKandang++;
         if (k.statusOperasional === "operasi") {
@@ -96,6 +115,7 @@ function DashboardContent() {
 
     return {
       totalPeternak: list.length,
+      thisWeek,
       totalKandang,
       totalOperasi,
       totalMandiri,
@@ -181,6 +201,21 @@ function DashboardContent() {
         />
 
         <Grid gutter="md">
+          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+            <StatCard
+              label="Pendaftaran Minggu Ini"
+              value={stats.thisWeek}
+              icon={IconCalendarPlus}
+              hint={
+                stats.thisWeek === 0
+                  ? "Belum ada 7 hari terakhir"
+                  : stats.thisWeek === 1
+                  ? "1 pendaftar baru"
+                  : `${stats.thisWeek} pendaftar baru`
+              }
+              iconColor="teal"
+            />
+          </Grid.Col>
           <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
             <StatCard
               label="Total Peternak"
