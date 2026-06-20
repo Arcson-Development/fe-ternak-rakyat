@@ -165,6 +165,14 @@ function PeternakListContent() {
     }
   };
 
+  const handleBulkPrint = () => {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds).join(",");
+    if (typeof window !== "undefined") {
+      window.open(`/dashboard/print?ids=${ids}`, "_blank");
+    }
+  };
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q && !kategoriFilter) return list;
@@ -311,6 +319,7 @@ function PeternakListContent() {
               noun="peternak"
               onClear={clearSelection}
               actions={[
+                BulkActions.print(handleBulkPrint),
                 BulkActions.exportExcel(handleBulkExport),
                 BulkActions.delete(() => setConfirmBulkDel(true)),
               ]}

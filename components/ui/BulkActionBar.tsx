@@ -2,7 +2,7 @@
 
 import React from "react";
 import { ActionIcon, Button, Group, Text, Transition } from "@mantine/core";
-import { IconCheckbox, IconTrash, IconX, IconFileExport } from "@tabler/icons-react";
+import { IconCheckbox, IconPrinter, IconTrash, IconX, IconFileExport } from "@tabler/icons-react";
 
 type Action = {
   label: string;
@@ -112,6 +112,13 @@ export const BulkActions = {
     label: "Ekspor Excel",
     icon: <IconFileExport size={14} />,
     color: "primary",
+    variant: "light",
+    onClick,
+  }),
+  print: (onClick: () => void): Action => ({
+    label: "Cetak",
+    icon: <IconPrinter size={14} />,
+    color: "gray",
     variant: "light",
     onClick,
   }),
