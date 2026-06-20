@@ -100,19 +100,29 @@ function mapKemitraan(raw: string): import("./types").Kemitraan | "" {
 /**
  * Build a PhotoRef whose `preview` is a fully-qualified image URL
  * (so `<img src>` works) but carries no `file` (the bytes live on
- * ImageKit now, not the browser). `name` and `size` are unknown
- * once the upload is committed, so we leave them off.
+ * ImageKit now, not the browser).
+ *
+ * The `id` is the relative photo path itself when one is provided —
+ * that gives every rendered photo a stable, deterministic key
+ * (matches `k.dinding_foto` from the backend) so SSR and CSR
+ * produce identical HTML. Falling back to a fresh UUID only
+ * matters for the empty-form case in the wizard, which doesn't
+ * use the adapter anyway.
  */
 function makeFoto(path: string | null | undefined): PhotoRef {
   return {
-    id: safeRandomUUID(),
+    id: path ?? safeRandomUUID(),
     preview: path ? `${IMAGE_BASE}/${path}` : null,
   };
 }
 
-function mapKandang(k: FormKandangItem): Kandang {
+function mapKandang(itemId: string | number, k: FormKandangItem): Kandang {
+  // Use the backend's numeric id directly so React keys stay
+  // stable across SSR/CSR. `safeRandomUUID()` here would cause
+  // hydration mismatch errors (React #418/#423) on the
+  // dashboard / list / detail pages.
   return {
-    id: safeRandomUUID(), // local Kandang.id is decorative; backend uses numeric
+    id: String(k.id), // local Kandang.id is decorative; backend uses numeric
     nama: "",
     lokasi: {
       lat: k.latitude && !Number.isNaN(parseFloat(k.latitude))
@@ -194,6 +204,6 @@ export function formItemToPeternak(item: FormItem): Peternak {
         : null,
       detail: item.alamat,
     },
-    kandang: item.form_peternakan_kandang.map(mapKandang),
+    kandang: item.form_peternakan_kandang.map((k) => mapKandang(item.id, k)),
   };
 }
