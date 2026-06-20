@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   getKabupaten,
   getKecamatan,
@@ -234,15 +234,30 @@ export function useSubmitPeternak() {
  * call `.id` on each item, and a stray `undefined` would crash the
  * whole layout (one bad `add()` in the store breaks every page).
  *
+ * Hydration safety: returns `[]` until the component is mounted on
+ * the client. The underlying Zustand store is wrapped in a `persist`
+ * middleware that synchronously reads localStorage on first import
+ * — that means SSR sees the store defaults (empty), but the very
+ * first CSR render can already see populated data, which causes
+ * React #418/#423 mismatches in any consumer (notably the
+ * Spotlight command palette in the root layout). The mounted gate
+ * ensures SSR and the first CSR render both see `[]`, then the
+ * real data lands in a follow-up render after `useEffect` fires.
+ *
  * The filter is memoised on the raw store reference so consumers that
  * compare the result with `===` (React, useEffect deps) don't see a
  * "new" array on every render.
  */
 export function usePeternakList(): Peternak[] {
   const list = useTernakStore((s) => s.peternak);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
   return useMemo(
-    () => list.filter((p): p is Peternak => Boolean(p && p.id)),
-    [list]
+    () =>
+      hydrated
+        ? list.filter((p): p is Peternak => Boolean(p && p.id))
+        : [],
+    [list, hydrated]
   );
 }
 
