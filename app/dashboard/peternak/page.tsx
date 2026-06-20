@@ -16,6 +16,7 @@ import {
   Modal,
   Pagination,
   ScrollArea,
+  Select,
   Stack,
   Table,
   Text,
@@ -28,6 +29,7 @@ import { useRouter } from "next/navigation";
 import {
   IconBuildingWarehouse,
   IconFileSpreadsheet,
+  IconFilter,
   IconPlus,
   IconRefresh,
   IconTrash,
@@ -59,6 +61,7 @@ function PeternakListContent() {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [search, setSearch] = useState("");
+  const [kategoriFilter, setKategoriFilter] = useState<string>("");
   const router = useRouter();
   // Backend-driven list with client-side search filter. Server-side
   // search also exists (`?search=` query param) — we debounce it
@@ -164,16 +167,18 @@ function PeternakListContent() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return list;
+    if (!q && !kategoriFilter) return list;
     return list.filter((p) => {
-      return (
+      const matchSearch =
+        !q ||
         p.nama.toLowerCase().includes(q) ||
         p.noKtp.toLowerCase().includes(q) ||
         (p.alamat.kelurahan?.name ?? "").toLowerCase().includes(q) ||
-        (p.alamat.kabupaten?.name ?? "").toLowerCase().includes(q)
-      );
+        (p.alamat.kabupaten?.name ?? "").toLowerCase().includes(q);
+      const matchKategori = !kategoriFilter || p.kategori === kategoriFilter;
+      return matchSearch && matchKategori;
     });
-  }, [list, search]);
+  }, [list, search, kategoriFilter]);
 
   const filteredIds = useMemo(() => new Set(filtered.map((p) => p.id)), [filtered]);
   const allFilteredSelected = filtered.length > 0 && filtered.every((p) => selectedIds.has(p.id));
@@ -259,13 +264,28 @@ function PeternakListContent() {
 
         <Card padding="md" radius="md" withBorder shadow="xs">
           <Group justify="space-between" wrap="wrap" gap="sm">
-            <TextInput
-              placeholder="Cari nama, No. KTP, atau alamat..."
-              leftSection={<IconSearch size={14} />}
-              value={search}
-              onChange={(e) => setSearch(e.currentTarget.value)}
-              w={{ base: "100%", sm: 320 }}
-            />
+            <Group gap="sm" wrap="wrap">
+              <TextInput
+                placeholder="Cari nama, No. KTP, atau alamat..."
+                leftSection={<IconSearch size={14} />}
+                value={search}
+                onChange={(e) => setSearch(e.currentTarget.value)}
+                w={{ base: "100%", xs: 200, sm: 280 }}
+              />
+              <Select
+                placeholder="Semua kategori"
+                leftSection={<IconFilter size={14} />}
+                value={kategoriFilter}
+                onChange={(v) => setKategoriFilter(v || "")}
+                data={[
+                  { value: "", label: "Semua kategori" },
+                  { value: "ayam_pedaging", label: "Ayam Pedaging" },
+                  { value: "ayam_petelur", label: "Ayam Petelur" },
+                ]}
+                clearable={false}
+                w={170}
+              />
+            </Group>
             <Button
               variant="light"
               leftSection={<IconFileSpreadsheet size={14} />}
@@ -276,9 +296,9 @@ function PeternakListContent() {
             </Button>
             <Group gap="xs">
               <Badge variant="light" color="primary" radius="sm">
-                Total: {list.length}
+                Total: {data?.meta?.total_data ?? list.length}
               </Badge>
-              {search && (
+              {(search || kategoriFilter) && (
                 <Badge variant="light" color="blue" radius="sm">
                   Ditampilkan: {filtered.length}
                 </Badge>

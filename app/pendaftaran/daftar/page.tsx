@@ -13,6 +13,7 @@ import {
   Group,
   Loader,
   Pagination,
+  Select,
   Skeleton,
   Stack,
   Table,
@@ -24,6 +25,7 @@ import {
   IconAlertCircle,
   IconArrowLeft,
   IconChevronRight,
+  IconFilter,
   IconHome,
   IconRefresh,
   IconSearch,
@@ -57,6 +59,7 @@ export default function DaftarPendaftaranPage() {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [search, setSearch] = useState("");
+  const [kategoriFilter, setKategoriFilter] = useState<string>("");
   const [hydrated, setHydrated] = useState(false);
 
   // The store is persisted via zustand/middleware, so it hydrates
@@ -79,19 +82,21 @@ export default function DaftarPendaftaranPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return list;
+    if (!q && !kategoriFilter) return list;
     return list.filter((p) => {
-      return (
+      const matchSearch =
+        !q ||
         p.nama.toLowerCase().includes(q) ||
         p.noKtp.toLowerCase().includes(q) ||
         (p.alamat.provinsi?.name ?? "").toLowerCase().includes(q) ||
         (p.alamat.kabupaten?.name ?? "").toLowerCase().includes(q) ||
         (p.alamat.kecamatan?.name ?? "").toLowerCase().includes(q) ||
         (p.alamat.kelurahan?.name ?? "").toLowerCase().includes(q) ||
-        p.alamat.detail.toLowerCase().includes(q)
-      );
+        p.alamat.detail.toLowerCase().includes(q);
+      const matchKategori = !kategoriFilter || p.kategori === kategoriFilter;
+      return matchSearch && matchKategori;
     });
-  }, [list, search]);
+  }, [list, search, kategoriFilter]);
 
   return (
     <Box className="pendaftaran-shell">
@@ -126,17 +131,35 @@ export default function DaftarPendaftaranPage() {
         <Stack gap="md">
           {/* Search + meta */}
           <Group justify="space-between" align="center" wrap="wrap">
-            <TextInput
-              placeholder="Cari nama, No. KTP, atau alamat..."
-              leftSection={<IconSearch size={16} />}
-              value={search}
-              onChange={(e) => {
-                setSearch(e.currentTarget.value);
-                setPage(1);
-              }}
-              w={{ base: "100%", sm: 380 }}
-              rightSection={isFetching ? <Loader size="xs" /> : null}
-            />
+            <Group gap="sm" wrap="wrap">
+              <TextInput
+                placeholder="Cari nama, No. KTP, atau alamat..."
+                leftSection={<IconSearch size={16} />}
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.currentTarget.value);
+                  setPage(1);
+                }}
+                w={{ base: "100%", xs: 200, sm: 280 }}
+                rightSection={isFetching ? <Loader size="xs" /> : null}
+              />
+              <Select
+                placeholder="Semua kategori"
+                leftSection={<IconFilter size={16} />}
+                value={kategoriFilter}
+                onChange={(v) => {
+                  setKategoriFilter(v || "");
+                  setPage(1);
+                }}
+                data={[
+                  { value: "", label: "Semua kategori" },
+                  { value: "ayam_pedaging", label: "Ayam Pedaging" },
+                  { value: "ayam_petelur", label: "Ayam Petelur" },
+                ]}
+                clearable={false}
+                w={170}
+              />
+            </Group>
             <Text fz="sm" c="dimmed">
               {!hydrated || isLoading
                 ? "Memuat..."
