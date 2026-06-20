@@ -98,12 +98,16 @@ function mapKemitraan(raw: string): import("./types").Kemitraan | "" {
 }
 
 /**
- * Build a PhotoRef whose `preview` is a fully-qualified image URL
- * (so `<img src>` works) but carries no `file` (the bytes live on
- * ImageKit now, not the browser).
+ * Build a PhotoRef whose `preview` is the URL the browser should
+ * actually load. We route the absolute backend URL through our
+ * own same-origin `/api/image-proxy` endpoint so the embedder
+ * check passes — the backend's image responses are blocked by
+ * `Cross-Origin-Resource-Policy: same-origin` on the cross-origin
+ * port, but serving the bytes from the same origin as the app
+ * dodges that entirely.
  *
- * The `id` is the relative photo path itself when one is provided —
- * that gives every rendered photo a stable, deterministic key
+ * The `id` is the relative photo path itself when one is provided
+ * — that gives every rendered photo a stable, deterministic key
  * (matches `k.dinding_foto` from the backend) so SSR and CSR
  * produce identical HTML. Falling back to a fresh UUID only
  * matters for the empty-form case in the wizard, which doesn't
@@ -112,8 +116,18 @@ function mapKemitraan(raw: string): import("./types").Kemitraan | "" {
 function makeFoto(path: string | null | undefined): PhotoRef {
   return {
     id: path ?? safeRandomUUID(),
-    preview: path ? `${IMAGE_BASE}/${path}` : null,
+    preview: path ? proxyImageUrl(path) : null,
   };
+}
+
+/**
+ * Wrap an absolute backend image URL through our same-origin
+ * proxy. Cached on the browser + CDN for 1h via the proxy's
+ * `Cache-Control` header.
+ */
+function proxyImageUrl(path: string): string {
+  const absolute = `${IMAGE_BASE}/${path}`;
+  return `/api/image-proxy?url=${encodeURIComponent(absolute)}`;
 }
 
 function mapKandang(itemId: string | number, k: FormKandangItem): Kandang {
