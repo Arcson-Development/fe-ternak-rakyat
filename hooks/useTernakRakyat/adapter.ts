@@ -13,6 +13,25 @@
 import type { FormItem, FormKandangItem } from "../../lib/api";
 import type { Peternak, Kandang, PhotoRef, Kondisi } from "./types";
 import { safeRandomUUID } from "../../utils/lib/safeUuid";
+import { IMAGE_BASE as FALLBACK_IMAGE_BASE } from "../../utils/contants/env";
+
+/**
+ * The base URL that prepends the relative path returned by the
+ * backend in `ktp_foto`, `dinding_foto`, etc. Two-step strategy
+ * because `NEXT_PUBLIC_*` env vars are baked in at build time:
+ *
+ *   1. Read from `process.env.NEXT_PUBLIC_IMAGE_BASE` if set
+ *      (this is the value ecosystem.config.js injects at runtime
+ *      via PM2, and the value `.env.local` provides at dev time).
+ *   2. Fall back to a hardcoded production address so even a
+ *      fresh checkout builds something that loads images.
+ *
+ * The fallback lives in utils/contants/env to keep the canonical
+ * address in one place; this module just imports it.
+ */
+const IMAGE_BASE: string =
+  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_IMAGE_BASE) ||
+  FALLBACK_IMAGE_BASE;
 
 /**
  * Reverse of KATEGORI_LABEL: display string ("Ayam Petelur") → enum
@@ -77,8 +96,6 @@ function mapKemitraan(raw: string): import("./types").Kemitraan | "" {
   if (v.includes("super")) return "super_unggas_jaya";
   return "";
 }
-
-const IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_BASE || "";
 
 /**
  * Build a PhotoRef whose `preview` is a fully-qualified image URL
