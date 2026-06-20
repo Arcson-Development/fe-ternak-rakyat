@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Box,
@@ -43,6 +43,14 @@ import { useThemeStore } from "../../../hooks/useTheme";
  * get unwieldy and the user can split into two batches.
  */
 export default function BatchPrintPage() {
+  return (
+    <Suspense fallback={null}>
+      <BatchPrintPageInner />
+    </Suspense>
+  );
+}
+
+function BatchPrintPageInner() {
   const router = useRouter();
   const search = useSearchParams();
   const mode = useThemeStore((s) => s.mode);
