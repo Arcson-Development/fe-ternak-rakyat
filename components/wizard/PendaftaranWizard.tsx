@@ -53,6 +53,7 @@ type IdentitasState = {
   noKtp: string;
   ktp: { id: string; preview: string | null; name?: string; size?: number };
   kategori: KategoriPeternak | "";
+  catatan: string;
   alamat: {
     provinsi: RegionRef | null;
     kabupaten: RegionRef | null;
@@ -67,6 +68,7 @@ const initialIdentitas: IdentitasState = {
   noKtp: "",
   ktp: emptyPhoto(),
   kategori: "",
+  catatan: "",
   alamat: {
     provinsi: null,
     kabupaten: null,
@@ -103,6 +105,7 @@ export function PendaftaranWizard({ initialValue, modeKey = "new" }: Props) {
           noKtp: "",
           ktp: emptyPhoto(),
           kategori: "",
+          catatan: "",
           alamat: {
             provinsi: null,
             kabupaten: null,
@@ -132,6 +135,7 @@ export function PendaftaranWizard({ initialValue, modeKey = "new" }: Props) {
       noKtp: payload.noKtp,
       ktp: payload.ktp,
       kategori: payload.kategori,
+      catatan: payload.catatan ?? "",
       alamat: payload.alamat,
     }),
     [payload]
@@ -205,15 +209,16 @@ export function PendaftaranWizard({ initialValue, modeKey = "new" }: Props) {
   };
 
   const handleSubmit = () => {
-    const finalPayload: Peternak = {
-      ...payload,
-      nama: identitas.nama.trim(),
-      noKtp: identitas.noKtp.trim(),
-      ktp: identitas.ktp,
-      kategori: identitas.kategori,
-      alamat: identitas.alamat,
-      kandang: kandangList,
-    };
+      const finalPayload: Peternak = {
+        ...payload,
+        nama: identitas.nama.trim(),
+        noKtp: identitas.noKtp.trim(),
+        ktp: identitas.ktp,
+        kategori: identitas.kategori,
+        catatan: identitas.catatan.trim(),
+        alamat: identitas.alamat,
+        kandang: kandangList,
+      };
 
     if (isEdit) {
       // Local edit: update in place
@@ -617,6 +622,11 @@ function identitasErrors(v: IdentitasState) {
         : null,
     ktp: !v.ktp.preview ? "Lampirkan foto KTP" : null,
     kategori: !v.kategori ? "Pilih kategori peternak" : null,
+    // Catatan is optional; only flag if it overflows the 500-char cap.
+    catatan:
+      v.catatan.length > 500
+        ? `Catatan maksimal 500 karakter (saat ini ${v.catatan.length})`
+        : null,
     alamat: {
       provinsi: !v.alamat.provinsi ? "Pilih provinsi" : null,
       kabupaten: !v.alamat.kabupaten ? "Pilih kabupaten/kota" : null,

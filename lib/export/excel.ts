@@ -98,34 +98,36 @@ export function buildLaporanWorkbook(peternak: Peternak[]): XLSX.WorkBook {
   // 2. PETERNAK
   const peternakRows: (string | number)[][] = [
     [
-      "No",
-      "ID Pendaftaran",
-      "Tanggal Daftar",
-      "Nama",
-      "No. KTP",
-      "Kategori",
-      "Provinsi",
-      "Kabupaten",
-      "Kecamatan",
-      "Kelurahan",
-      "Alamat Detail",
-      "Jumlah Kandang",
-    ],
-    ...peternak.map((p, i) => [
-      i + 1,
-      p.id,
-      new Date(p.createdAt).toLocaleDateString("id-ID"),
-      p.nama,
-      p.noKtp,
-      labelOf(p.kategori, KATEGORI_LABEL),
-      p.alamat.provinsi?.name ?? "—",
-      p.alamat.kabupaten?.name ?? "—",
-      p.alamat.kecamatan?.name ?? "—",
-      p.alamat.kelurahan?.name ?? "—",
-      p.alamat.detail,
-      p.kandang.length,
-    ]),
-  ];
+          "No",
+          "ID Pendaftaran",
+          "Tanggal Daftar",
+          "Nama",
+          "No. KTP",
+          "Kategori",
+          "Provinsi",
+          "Kabupaten",
+          "Kecamatan",
+          "Kelurahan",
+          "Alamat Detail",
+          "Catatan",
+          "Jumlah Kandang",
+        ],
+        ...peternak.map((p, i) => [
+          i + 1,
+          p.id,
+          new Date(p.createdAt).toLocaleDateString("id-ID"),
+          p.nama,
+          p.noKtp,
+          labelOf(p.kategori, KATEGORI_LABEL),
+          p.alamat.provinsi?.name ?? "—",
+          p.alamat.kabupaten?.name ?? "—",
+          p.alamat.kecamatan?.name ?? "—",
+          p.alamat.kelurahan?.name ?? "—",
+          p.alamat.detail,
+          p.catatan || "",
+          p.kandang.length,
+        ]),
+      ];
   const wsPeternak = XLSX.utils.aoa_to_sheet(peternakRows);
   wsPeternak["!cols"] = [
     { wch: 5 },
@@ -320,8 +322,9 @@ export function buildSinglePeternakWorkbook(p: Peternak): XLSX.WorkBook {
     ["Kabupaten/Kota", p.alamat.kabupaten?.name ?? "—"],
     ["Kecamatan", p.alamat.kecamatan?.name ?? "—"],
     ["Kelurahan/Desa", p.alamat.kelurahan?.name ?? "—"],
-    ["Alamat Detail", p.alamat.detail],
-  ]);
+        ["Alamat Detail", p.alamat.detail],
+        ["Catatan", p.catatan || ""],
+      ]);
   identitas["!cols"] = [{ wch: 22 }, { wch: 36 }];
   identitas["!merges"] = [
     { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } },

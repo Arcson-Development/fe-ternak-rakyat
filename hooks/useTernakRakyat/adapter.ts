@@ -203,6 +203,7 @@ export function formItemToPeternak(item: FormItem): Peternak {
     noKtp: item.ktp_no,
     ktp: makeFoto(item.ktp_foto),
     kategori: mapKategori(item.kategori_peternak),
+    catatan: item.catatan ?? "",
     alamat: {
       provinsi: item.provinsi
         ? { id: String(item.provinsi_id), name: item.provinsi }

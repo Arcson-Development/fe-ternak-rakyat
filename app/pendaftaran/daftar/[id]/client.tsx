@@ -24,6 +24,7 @@ import {
   IconHome,
   IconId,
   IconMapPin,
+  IconNotes,
   IconUser,
 } from "@tabler/icons-react";
 import {
@@ -237,6 +238,33 @@ function IdentitasCard({ form }: { form: Peternak }) {
             <Field label="Alamat" value={form.alamat.detail} />
           </Grid.Col>
         </Grid>
+
+        {form.catatan && (
+          <>
+            <Divider />
+            <Stack gap={6}>
+              <Group gap="xs">
+                <IconNotes size={14} color="var(--mantine-color-primary-6)" />
+                <Text fz="xs" fw={600} c="dimmed" tt="uppercase">
+                  Catatan
+                </Text>
+              </Group>
+              <Text
+                fz="sm"
+                style={{
+                  whiteSpace: "pre-wrap",
+                  lineHeight: 1.6,
+                  padding: "10px 12px",
+                  background: "var(--app-surface-sunken)",
+                  border: "1px solid var(--app-border)",
+                  borderRadius: 8,
+                }}
+              >
+                {form.catatan}
+              </Text>
+            </Stack>
+          </>
+        )}
 
         <Divider />
 

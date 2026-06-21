@@ -4,6 +4,7 @@ import axios from "axios";
 import { DOMAIN_API } from "../../utils/contants/env";
 import { api, toApiError } from "./client";
 import { clearPeternakToken, ensurePeternakToken } from "../auth/peternakAuth";
+import { clearAdminToken, ensureAdminToken } from "../auth/adminAuth";
 import {
   DAFTAR_KEMITRAAN,
   JENIS_USAHA_DISPLAY,
@@ -169,6 +170,12 @@ export type FormItem = {
   created_at: string;
   kategori_peternak: string;
   alamat: string;
+  /**
+   * Catatan tambahan dari pendaftar. Backend bisa mengembalikan
+   * string kosong / undefined untuk record lama; adapter menormalkan
+   * ke "" supaya UI tidak crash.
+   */
+  catatan?: string;
   form_peternakan_kandang: FormKandangItem[];
   provinsi: string;
   kabupaten: string;
@@ -246,6 +253,97 @@ export async function deleteForm(id: string | number): Promise<FormDeleteRespons
     config
   );
   return data;
+}
+
+// ---------- form approval (admin-gated) ----------
+//
+// Two separate routes flip the same `is_approved` flag on a form
+// record, identified by ID. Both require the admin-role bearer
+// (different from the petenak token used by /form/create). The
+// route name encodes the target state (`-to-1` = approve,
+// `-to-2` = reject) rather than a verb, mirroring the Postman
+// collection verbatim.
+
+export type FormApproveResponse = {
+  status: number;
+  error: boolean;
+  message: string;
+};
+
+async function authedAdminAxios() {
+  const token = await ensureAdminToken();
+  return {
+    headers: { Authorization: `Bearer ${token}` },
+    timeout: 20_000,
+  };
+}
+
+export async function approveForm(
+  id: string | number
+): Promise<FormApproveResponse> {
+  try {
+    const config = await authedAdminAxios();
+    const { data } = await axios.put<FormApproveResponse>(
+      `${DOMAIN_API}/form/is-approve-to-1/${id}`,
+      undefined,
+      config
+    );
+    return data;
+  } catch (err) {
+    if ((err as any)?.response?.status === 401) clearAdminToken();
+    throw toApiError(err);
+  }
+}
+
+export async function rejectForm(
+  id: string | number
+): Promise<FormApproveResponse> {
+  try {
+    const config = await authedAdminAxios();
+    const { data } = await axios.put<FormApproveResponse>(
+      `${DOMAIN_API}/form/is-approve-to-2/${id}`,
+      undefined,
+      config
+    );
+    return data;
+  } catch (err) {
+    if ((err as any)?.response?.status === 401) clearAdminToken();
+    throw toApiError(err);
+  }
+}
+
+// ---------- form export (admin-gated) ----------
+//
+// Backend returns the binary .xlsx directly (Content-Type:
+// application/vnd.openxmlformats-...). We fetch it as a Blob and
+// hand it back to the caller for a download — never try to JSON.parse
+// the response body. Admin token is required because the route is
+// gated by role.
+
+export async function exportFormToExcel(
+  startDate: string,
+  endDate: string
+): Promise<Blob> {
+  try {
+    const config = await authedAdminAxios();
+    const response = await axios.post<Blob>(
+      `${DOMAIN_API}/form-export/export-to-excel`,
+      undefined,
+      {
+        ...config,
+        params: { start_date: startDate, end_date: endDate },
+        responseType: "blob",
+        // Some servers send application/octet-stream or even the wrong
+        // charset on top of a valid XLSX body. Letting axios follow
+        // the responseType hint is enough; we just never let it parse
+        // the bytes as JSON.
+      }
+    );
+    return response.data;
+  } catch (err) {
+    if ((err as any)?.response?.status === 401) clearAdminToken();
+    throw toApiError(err);
+  }
 }
 
 // ---------- master data ----------
@@ -326,15 +424,16 @@ export async function submitForm(
   const fd = new FormData();
 
   // --- identitas ---
-  fd.append("nama", payload.nama ?? "");
-  fd.append("provinsi_id", payload.alamat.provinsi?.id ?? "");
-  fd.append("kabupaten_id", payload.alamat.kabupaten?.id ?? "");
-  fd.append("kecamatan_id", payload.alamat.kecamatan?.id ?? "");
-  fd.append("kelurahan_id", payload.alamat.kelurahan?.id ?? "");
-  fd.append("alamat", payload.alamat.detail ?? "");
-  fd.append("ktp_no", payload.noKtp ?? "");
-  appendFile(fd, "ktp_foto", payload.ktp);
-  fd.append("kategori_peternak", KATEGORI_DISPLAY[payload.kategori] ?? "");
+    fd.append("nama", payload.nama ?? "");
+    fd.append("provinsi_id", payload.alamat.provinsi?.id ?? "");
+    fd.append("kabupaten_id", payload.alamat.kabupaten?.id ?? "");
+    fd.append("kecamatan_id", payload.alamat.kecamatan?.id ?? "");
+    fd.append("kelurahan_id", payload.alamat.kelurahan?.id ?? "");
+    fd.append("alamat", payload.alamat.detail ?? "");
+    fd.append("ktp_no", payload.noKtp ?? "");
+    appendFile(fd, "ktp_foto", payload.ktp);
+    fd.append("kategori_peternak", KATEGORI_DISPLAY[payload.kategori] ?? "");
+    fd.append("catatan", payload.catatan ?? "");
 
   // --- kandang (repeatable) ---
   payload.kandang.forEach((k, i) => {

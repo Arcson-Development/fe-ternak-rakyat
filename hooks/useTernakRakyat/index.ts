@@ -11,14 +11,17 @@ import {
 import { useTernakStore } from "./store/ternakStore";
 import { DOMAIN_API } from "../../utils/contants/env";
 import {
+  approveForm,
   createPeternak,
   deleteForm,
+  exportFormToExcel,
   fetchFormById,
   fetchFormList,
   fetchKabupaten,
   fetchKecamatan,
   fetchKelurahan,
   fetchProvinsi,
+  rejectForm,
   submitForm,
   toApiError,
   type FormItem,
@@ -203,15 +206,16 @@ export function useSubmitPeternak() {
       }
 
       // Legacy /peternak endpoint (kept for backwards compatibility)
-      try {
-        const saved = await createPeternak({
-          nama: data.nama,
-          noKtp: data.noKtp,
-          ktp: data.ktp,
-          alamat: data.alamat,
-          kategori: data.kategori,
-          kandang: data.kandang,
-        });
+            try {
+              const saved = await createPeternak({
+                nama: data.nama,
+                noKtp: data.noKtp,
+                ktp: data.ktp,
+                alamat: data.alamat,
+                kategori: data.kategori,
+                catatan: data.catatan ?? "",
+                kandang: data.kandang,
+              });
         if (!saved || !saved.id) {
           throw new Error(
             "Respons server tidak berisi data peternak yang valid."
@@ -314,3 +318,4 @@ export * from "./types";
 export { useTernakStore } from "./store/ternakStore";
 export { formItemToPeternak } from "./adapter";
 export type { FormItem, FormListResponse } from "../../lib/api";
+export { approveForm, rejectForm, exportFormToExcel } from "../../lib/api";

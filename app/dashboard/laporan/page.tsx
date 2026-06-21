@@ -18,8 +18,11 @@ import {
   Table,
   Text,
 } from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
+import "@mantine/dates/styles.css";
 import { notifications } from "@mantine/notifications";
 import {
+  IconCalendar,
   IconChartBar,
   IconDownload,
   IconFileSpreadsheet,
@@ -32,7 +35,7 @@ import { PageHeader } from "../../../components/ui/PageHeader";
 import { StatCard } from "../../../components/ui/StatCard";
 import { StatusBadge } from "../../../components/ui/StatusBadge";
 import { EmptyState } from "../../../components/ui/EmptyState";
-import { usePeternakList, type Peternak } from "../../../hooks/useTernakRakyat";
+import { usePeternakList, exportFormToExcel, type Peternak } from "../../../hooks/useTernakRakyat";
 import {
   buildLaporanWorkbook,
   downloadWorkbook,
@@ -126,14 +129,31 @@ export default function LaporanPage() {
   };
 
   const addMany = useTernakStore((s) => s.addMany);
-  const [importModalOpen, setImportModalOpen] = useState(false);
-  const [importFile, setImportFile] = useState<File | null>(null);
-  const [importHeaders, setImportHeaders] = useState<string[]>([]);
-  const [importMapping, setImportMapping] = useState<ColumnMapping>({});
-  const [importRows, setImportRows] = useState<Record<string, string | number>[]>([]);
-  const [importValidation, setImportValidation] = useState<{ valid: ValidatedRow[]; errors: any[] } | null>(null);
-  const [importStage, setImportStage] = useState<"upload" | "mapping" | "review" | "done">("upload");
-  const [importedCount, setImportedCount] = useState(0);
+    const [importModalOpen, setImportModalOpen] = useState(false);
+    const [importFile, setImportFile] = useState<File | null>(null);
+    const [importHeaders, setImportHeaders] = useState<string[]>([]);
+    const [importMapping, setImportMapping] = useState<ColumnMapping>({});
+    const [importRows, setImportRows] = useState<Record<string, string | number>[]>([]);
+    const [importValidation, setImportValidation] = useState<{ valid: ValidatedRow[]; errors: any[] } | null>(null);
+    const [importStage, setImportStage] = useState<"upload" | "mapping" | "review" | "done">("upload");
+    const [importedCount, setImportedCount] = useState(0);
+
+    // Backend-export modal state. `exportRange` is [start, end] picked
+    // via Mantine's DatePickerInput; we normalise both ends to YYYY-MM-DD
+    // before calling /form-export/export-to-excel.
+    const [exportModalOpen, setExportModalOpen] = useState(false);
+    const [exporting, setExporting] = useState(false);
+    const [exportRange, setExportRange] = useState<[Date | null, Date | null]>([
+      null,
+      null,
+    ]);
+
+    const formatYmd = (d: Date): string => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
 
   const handleFileSelected = async (file: File | null) => {
     setImportFile(file);
@@ -173,11 +193,14 @@ export default function LaporanPage() {
   const handleConfirmImport = () => {
     if (!importValidation) return;
     let count = 0;
-    importValidation.valid.forEach((row) => {
-      const data = buildPeternakFromRow(row.data, row.row);
-      addMany([data as Peternak]);
-      count++;
-    });
+        importValidation.valid.forEach((row) => {
+          const data = buildPeternakFromRow(row.data, row.row);
+          // buildPeternakFromRow returns the legacy shape that predates the
+          // `catatan` field — coerce via unknown so TS doesn't complain
+          // about a missing required property on import-side data.
+          addMany([data as unknown as Peternak]);
+          count++;
+        });
     setImportedCount(count);
     setImportStage("done");
     notifications.show({
@@ -199,35 +222,89 @@ export default function LaporanPage() {
     setImportedCount(0);
   };
 
-  const handleExportExcel = (subset?: Peternak[]) => {
-    const data = subset ?? list;
-    if (data.length === 0) {
-      notifications.show({
-        title: "Tidak ada data",
-        message: "Tidak ada data untuk diekspor.",
-        color: "yellow",
-      });
-      return;
-    }
-    try {
-      const wb = buildLaporanWorkbook(data);
-      const ts = TIMESTAMP();
-      const tag = subset ? "-filter" : "";
-      downloadWorkbook(wb, `siternak-laporan${tag}-${ts}.xlsx`);
-      notifications.show({
-        title: "Berhasil diekspor",
-        message: `${data.length} data peternak disimpan ke Excel.`,
-        color: "green",
-        icon: <IconFileSpreadsheet size={18} />,
-      });
-    } catch (e) {
-      notifications.show({
-        title: "Gagal mengekspor",
-        message: "Terjadi kesalahan saat membuat file Excel.",
-        color: "red",
-      });
-    }
-  };
+  const handleExportExcel = async () => {
+      setExportModalOpen(true);
+    };
+
+    const confirmExportBackend = async () => {
+      if (!exportRange[0] || !exportRange[1]) {
+        notifications.show({
+          title: "Tanggal belum lengkap",
+          message: "Pilih tanggal mulai dan tanggal selesai terlebih dahulu.",
+          color: "yellow",
+        });
+        return;
+      }
+      const startDate = formatYmd(exportRange[0]);
+      const endDate = formatYmd(exportRange[1]);
+      setExporting(true);
+      try {
+        const blob = await exportFormToExcel(startDate, endDate);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `siternak-export-${startDate}-sd-${endDate}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        // Revoke after a short delay so Safari has time to start the
+        // download before the URL dies.
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        notifications.show({
+          title: "Berhasil diekspor",
+          message: `Data ${startDate} s.d. ${endDate} diunduh dari server.`,
+          color: "green",
+          icon: <IconFileSpreadsheet size={18} />,
+        });
+        setExportModalOpen(false);
+      } catch (e: any) {
+        notifications.show({
+          title: "Gagal mengekspor",
+          message:
+            e?.message ||
+            "Server gagal memproses ekspor. Coba lagi atau hubungi admin.",
+          color: "red",
+        });
+      } finally {
+        setExporting(false);
+      }
+    };
+
+    /**
+     * Local fallback: build the workbook from the in-memory list when
+     * the backend's /form-export/export-to-excel isn't reachable
+     * (demo mode, missing admin token, 5xx). Preserves the existing
+     * "offline-ish" feel for users who don't want to login as admin.
+     */
+    const handleExportLocal = (subset?: Peternak[]) => {
+      const data = subset ?? list;
+      if (data.length === 0) {
+        notifications.show({
+          title: "Tidak ada data",
+          message: "Tidak ada data untuk diekspor.",
+          color: "yellow",
+        });
+        return;
+      }
+      try {
+        const wb = buildLaporanWorkbook(data);
+        const ts = TIMESTAMP();
+        const tag = subset ? "-filter" : "";
+        downloadWorkbook(wb, `siternak-laporan${tag}-${ts}.xlsx`);
+        notifications.show({
+          title: "Berhasil diekspor (lokal)",
+          message: `${data.length} data peternak disimpan ke Excel dari cache lokal.`,
+          color: "green",
+          icon: <IconFileSpreadsheet size={18} />,
+        });
+      } catch (e) {
+        notifications.show({
+          title: "Gagal mengekspor",
+          message: "Terjadi kesalahan saat membuat file Excel.",
+          color: "red",
+        });
+      }
+    };
 
 
   return (
@@ -261,12 +338,21 @@ export default function LaporanPage() {
                 Cetak
               </Button>
               <Button
-                leftSection={<IconDownload size={14} />}
-                onClick={() => handleExportExcel(filtered)}
-                disabled={filtered.length === 0}
-              >
-                Ekspor Excel
-              </Button>
+                              leftSection={<IconDownload size={14} />}
+                              onClick={handleExportExcel}
+                              disabled={filtered.length === 0}
+                            >
+                              Ekspor Excel
+                            </Button>
+                            <Button
+                              variant="subtle"
+                              leftSection={<IconDownload size={14} />}
+                              onClick={() => handleExportLocal(filtered)}
+                              disabled={filtered.length === 0}
+                              size="xs"
+                            >
+                              (Lokal)
+                            </Button>
             </Group>
           }
         />
@@ -604,11 +690,69 @@ export default function LaporanPage() {
               </Text>
             </Stack>
             <Button onClick={closeImportModal}>Tutup</Button>
-          </Stack>
-        )}
-      </Modal>
-     </Stack>
-    </Container>
+                      </Stack>
+                    )}
+                  </Modal>
+
+                  {/* Export modal — asks for date range, then hits /form-export/export-to-excel */}
+                  <Modal
+                    opened={exportModalOpen}
+                    onClose={() => (exporting ? null : setExportModalOpen(false))}
+                    title={
+                      <Group gap="xs">
+                        <ThemeIcon color="primary" variant="light" size="md" radius="md">
+                          <IconFileSpreadsheet size={14} />
+                        </ThemeIcon>
+                        <Text fw={700}>Ekspor Data ke Excel</Text>
+                      </Group>
+                    }
+                    centered
+                    size="md"
+                  >
+                    <Stack gap="md">
+                      <Text fz="sm" c="dimmed">
+                        Pilih rentang tanggal pendaftaran. Backend akan membuat file
+                        Excel dengan semua data yang dibuat dalam rentang tersebut.
+                      </Text>
+                      <DatePickerInput
+                        type="range"
+                        label="Rentang Tanggal"
+                        placeholder="Pilih tanggal mulai dan selesai"
+                        value={exportRange}
+                        onChange={(v) => setExportRange(v as [Date | null, Date | null])}
+                        maxDate={new Date()}
+                        leftSection={<IconCalendar size={16} />}
+                        clearable
+                        popoverProps={{ withinPortal: true }}
+                      />
+                      <Alert color="blue" variant="light">
+                        <Text fz="xs">
+                          Endpoint <code>POST /form-export/export-to-excel</code>{" "}
+                          memerlukan token admin. Login admin akan dilakukan otomatis
+                          saat Anda menekan tombol Ekspor.
+                        </Text>
+                      </Alert>
+                      <Group justify="flex-end" gap="sm">
+                        <Button
+                          variant="default"
+                          onClick={() => setExportModalOpen(false)}
+                          disabled={exporting}
+                        >
+                          Batal
+                        </Button>
+                        <Button
+                          leftSection={<IconDownload size={14} />}
+                          onClick={confirmExportBackend}
+                          loading={exporting}
+                          disabled={!exportRange[0] || !exportRange[1]}
+                        >
+                          Ekspor
+                        </Button>
+                      </Group>
+                    </Stack>
+                  </Modal>
+                 </Stack>
+                </Container>
   );
 }
 

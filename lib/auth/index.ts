@@ -102,3 +102,14 @@ export function getCurrentUser(): User | null {
 export function isAuthenticated(): boolean {
   return !!getItem<string>(STORAGE_KEYS.token);
 }
+
+// Re-export the admin-role token flow so callers can do:
+//   import { ensureAdminToken } from "../../lib/auth"
+// instead of reaching into `lib/auth/adminAuth` directly. The two
+// flows are independent — admin token is lazy-fetched only when an
+// admin-gated endpoint (export, approve, reject) is hit.
+export {
+  ensureAdminToken,
+  getAdminToken,
+  clearAdminToken,
+} from "./adminAuth";

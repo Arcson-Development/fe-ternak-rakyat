@@ -40,6 +40,7 @@ type Identitas = {
   noKtp: string;
   ktp: { id: string; preview: string | null; name?: string };
   kategori: KategoriPeternak | "";
+  catatan: string;
   alamat: {
     provinsi: RegionRef | null;
     kabupaten: RegionRef | null;
@@ -81,6 +82,9 @@ export function StepReview({ identitas, kandangList, onJumpTo }: Props) {
             <Field label="Kecamatan" value={identitas.alamat.kecamatan?.name ?? "—"} />
             <Field label="Kelurahan" value={identitas.alamat.kelurahan?.name ?? "—"} />
             <Field label="Alamat" value={identitas.alamat.detail} />
+          </Grid.Col>
+          <Grid.Col span={12}>
+            <Field label="Catatan" value={identitas.catatan} multiline />
           </Grid.Col>
           <Grid.Col span={12}>
             <Group gap="sm" align="flex-start">
@@ -277,7 +281,32 @@ export function StepReview({ identitas, kandangList, onJumpTo }: Props) {
 
 // ---------- subcomponents ----------
 
-function Field({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+function Field({ label, value, mono, multiline }: { label: string; value: string; mono?: boolean; multiline?: boolean }) {
+  if (multiline) {
+    return (
+      <Box mb="sm">
+        <Text fz="xs" fw={600} c="dimmed" tt="uppercase" mb={4}>
+          {label}
+        </Text>
+        <Text
+          fz="sm"
+          fw={500}
+          style={{
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            padding: value ? "10px 12px" : 0,
+            background: value ? "var(--app-surface-sunken)" : "transparent",
+            border: value ? "1px solid var(--app-border)" : "none",
+            borderRadius: 8,
+            fontStyle: value ? "normal" : "italic",
+            color: value ? undefined : "var(--mantine-color-dimmed)",
+          }}
+        >
+          {value || "—"}
+        </Text>
+      </Box>
+    );
+  }
   return (
     <Group gap="sm" align="flex-start" wrap="nowrap" mb={6}>
       <Text fz="xs" fw={600} c="dimmed" w={120} style={{ paddingTop: 2 }}>

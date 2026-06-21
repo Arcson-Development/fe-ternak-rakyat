@@ -30,6 +30,8 @@ import {
   IconBuildingWarehouse,
   IconCalendar,
   IconCheck,
+  IconCircleCheck,
+  IconCircleX,
   IconClipboardList,
   IconCurrentLocation,
   IconDownload,
@@ -38,6 +40,7 @@ import {
   IconFileText,
   IconId,
   IconMapPin,
+  IconNotes,
   IconPhoto,
   IconPrinter,
   IconShare,
@@ -59,6 +62,8 @@ import {
   KAPASITAS_LABEL,
   KATEGORI_LABEL,
   STATUS_OPERASIONAL_LABEL,
+  approveForm,
+  rejectForm,
   kemitraanLabel,
   useFormById,
   useDeleteForm,
@@ -99,6 +104,7 @@ function PeternakDetailInner() {
     params.id as string | undefined
   );
   const deleteForm = useDeleteForm();
+  const [approvalPending, setApprovalPending] = useState<null | "approve" | "reject">(null);
   const peternak: Peternak | null = formData
     ? formItemToPeternak(formData)
     : null;
@@ -169,6 +175,38 @@ function PeternakDetailInner() {
     }
   };
 
+  const handleApproval = async (decision: "approve" | "reject") => {
+    setApprovalPending(decision);
+    try {
+      if (decision === "approve") {
+        await approveForm(peternak.id);
+        notifications.show({
+          title: "Pendaftaran disetujui",
+          message: `${peternak.nama} telah di-approve.`,
+          color: "green",
+          icon: <IconCircleCheck size={18} />,
+        });
+      } else {
+        await rejectForm(peternak.id);
+        notifications.show({
+          title: "Pendaftaran ditolak",
+          message: `${peternak.nama} telah di-reject.`,
+          color: "yellow",
+          icon: <IconCircleX size={18} />,
+        });
+      }
+      await refetch();
+    } catch (err) {
+      notifications.show({
+        title: decision === "approve" ? "Gagal menyetujui" : "Gagal menolak",
+        message: (err as Error)?.message || "Periksa koneksi Anda.",
+        color: "red",
+      });
+    } finally {
+      setApprovalPending(null);
+    }
+  };
+
   return (
     <Container size="xl" px={0} className="print-area">
       <Stack gap="md" mb="md" className="no-print-when-needed">
@@ -219,6 +257,26 @@ function PeternakDetailInner() {
               onClick={() => router.push(`/pendaftaran?edit=${peternak.id}`)}
             >
               Edit
+            </Button>
+            <Button
+              variant="light"
+              color="green"
+              leftSection={<IconCircleCheck size={14} />}
+              onClick={() => handleApproval("approve")}
+              loading={approvalPending === "approve"}
+              disabled={approvalPending !== null}
+            >
+              Setujui
+            </Button>
+            <Button
+              variant="light"
+              color="orange"
+              leftSection={<IconCircleX size={14} />}
+              onClick={() => handleApproval("reject")}
+              loading={approvalPending === "reject"}
+              disabled={approvalPending !== null}
+            >
+              Tolak
             </Button>
             <Button
               variant="default"
@@ -388,6 +446,24 @@ function IdentitasTab({ p, onOpenLightbox }: { p: Peternak; onOpenLightbox: (pho
             <Divider my="xs" />
             <Row k="Alamat Lengkap" v={p.alamat.detail || "—"} />
           </Stack>
+        </Card>
+
+        <Card withBorder padding="lg" radius="md" shadow="xs" mt="md">
+          <Group gap="sm" mb="md">
+            <ThemeIcon variant="light" color="gray" size="lg" radius="md">
+              <IconNotes size={20} />
+            </ThemeIcon>
+            <Text fw={700} fz="lg">Catatan</Text>
+          </Group>
+          {p.catatan ? (
+            <Text fz="sm" style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
+              {p.catatan}
+            </Text>
+          ) : (
+            <Text fz="sm" c="dimmed" fs="italic">
+              Tidak ada catatan dari pendaftar.
+            </Text>
+          )}
         </Card>
       </Grid.Col>
 

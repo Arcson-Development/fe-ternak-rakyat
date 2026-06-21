@@ -97,6 +97,12 @@ export interface Peternak {
   ktp: PhotoRef;
   alamat: Alamat;
   kategori: KategoriPeternak | "";
+  /**
+   * Catatan tambahan dari pendaftar (opsional). Ditampilkan di
+   * review step dan diteruskan sebagai field `catatan` ke
+   * POST /form/create. Tidak ikut validasi — boleh kosong.
+   */
+  catatan: string;
   kandang: Kandang[];
 }
 
@@ -224,6 +230,7 @@ export const emptyPeternak = (): Peternak => ({
   ktp: emptyPhoto(),
   alamat: emptyAlamat(),
   kategori: "",
+  catatan: "",
   kandang: [],
 });
 

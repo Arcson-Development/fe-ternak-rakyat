@@ -12,7 +12,7 @@ import {
   TextInput,
   Textarea,
 } from "@mantine/core";
-import { IconUser, IconMapPin, IconId } from "@tabler/icons-react";
+import { IconUser, IconMapPin, IconId, IconNotes } from "@tabler/icons-react";
 import { SectionCard } from "../ui/SectionCard";
 import { FileUploadCard } from "../ui/FileUploadCard";
 import {
@@ -40,6 +40,7 @@ type Identitas = {
   noKtp: string;
   ktp: { id: string; preview: string | null; name?: string; size?: number };
   kategori: KategoriPeternak | "";
+  catatan: string;
   alamat: Alamat;
 };
 
@@ -48,6 +49,7 @@ type Errors = {
   noKtp: string | null;
   ktp: string | null;
   kategori: string | null;
+  catatan: string | null;
   alamat: {
     provinsi: string | null;
     kabupaten: string | null;
@@ -260,6 +262,26 @@ export function StepIdentitas({ value, onChange, errors }: Props) {
             {errors.kategori}
           </Text>
         )}
+      </SectionCard>
+
+      {/* Catatan */}
+      <SectionCard
+        title="Catatan Tambahan"
+        description="Informasi pelengkap yang ingin disampaikan ke operator (opsional)."
+        icon={IconNotes}
+        iconColor="gray"
+      >
+        <Textarea
+          label="Catatan"
+          placeholder="cth: Ayam baru beli minggu lalu, sedang adaptasi pakan. Lokasi kandang agak sulit dijangkau saat hujan."
+          autosize
+          minRows={3}
+          maxRows={8}
+          maxLength={500}
+          value={value.catatan}
+          onChange={(e) => set("catatan", e.currentTarget.value)}
+          description={`${value.catatan.length}/500 karakter · tidak wajib diisi`}
+        />
       </SectionCard>
     </Stack>
   );
