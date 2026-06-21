@@ -151,8 +151,7 @@ export function PhotoLightbox({
                 variant="filled"
                 color="dark"
                 pos="absolute"
-                left="md"
-                style={{ zIndex: 2, opacity: 0.7 }}
+                style={{ left: 12, top: "50%", transform: "translateY(-50%)", zIndex: 2, opacity: 0.7 }}
                 onClick={() =>
                   setIndex((i) => (i - 1 + photos.length) % photos.length)
                 }
@@ -166,8 +165,7 @@ export function PhotoLightbox({
                 variant="filled"
                 color="dark"
                 pos="absolute"
-                right="md"
-                style={{ zIndex: 2, opacity: 0.7 }}
+                style={{ right: 12, top: "50%", transform: "translateY(-50%)", zIndex: 2, opacity: 0.7 }}
                 onClick={() => setIndex((i) => (i + 1) % photos.length)}
                 aria-label="Berikutnya"
               >
