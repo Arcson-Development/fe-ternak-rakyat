@@ -37,7 +37,6 @@ import {
   IconDownload,
   IconFileSpreadsheet,
   IconEdit,
-  IconFileText,
   IconId,
   IconMapPin,
   IconNotes,
@@ -360,9 +359,7 @@ function PeternakDetailInner() {
           <Tabs.Tab value="kandang" leftSection={<IconBuildingWarehouse size={14} />}>
             Kandang ({totalKandang})
           </Tabs.Tab>
-          <Tabs.Tab value="dokumen" leftSection={<IconFileText size={14} />}>
-            Dokumen
-          </Tabs.Tab>
+
           <Tabs.Tab value="timeline" leftSection={<IconCalendar size={14} />}>
             Linimasa
           </Tabs.Tab>
@@ -374,9 +371,7 @@ function PeternakDetailInner() {
         <Tabs.Panel value="kandang" pt="md">
           <KandangListTab p={peternak} onOpenLightbox={openLightbox} />
         </Tabs.Panel>
-        <Tabs.Panel value="dokumen" pt="md">
-          <DokumenTab p={peternak} onOpenLightbox={openLightbox} />
-        </Tabs.Panel>
+
         <Tabs.Panel value="timeline" pt="md">
           <TimelineTab p={peternak} />
         </Tabs.Panel>
@@ -532,6 +527,23 @@ function KandangListTab({ p, onOpenLightbox }: { p: Peternak; onOpenLightbox: (p
 }
 
 function KandangCard({ k, index, onOpenLightbox }: { k: Kandang; index: number; onOpenLightbox: (photos: PhotoItem[], index: number) => void }) {
+  const fotoFields: { label: string; foto: Kandang["kondisi"]["dinding"]; key: string }[] = [];
+
+  if (k.kondisi.dinding.foto) fotoFields.push({ label: "Dinding", foto: k.kondisi.dinding, key: `${k.id}-dinding` });
+  if (k.kondisi.atap.foto) fotoFields.push({ label: "Atap", foto: k.kondisi.atap, key: `${k.id}-atap` });
+  if (k.kondisi.lantai.foto) fotoFields.push({ label: "Lantai", foto: k.kondisi.lantai, key: `${k.id}-lantai` });
+  if (k.peralatan.tempatMakan.foto) fotoFields.push({ label: "Tempat Makan", foto: k.peralatan.tempatMakan, key: `${k.id}-tmp_mkn` });
+  if (k.peralatan.tempatMinum.foto) fotoFields.push({ label: "Tempat Minum", foto: k.peralatan.tempatMinum, key: `${k.id}-tmp_mnm` });
+  if (k.peralatan.brooding.foto) fotoFields.push({ label: "Brooding", foto: k.peralatan.brooding, key: `${k.id}-brooding` });
+  if (k.peralatan.kipas.foto) fotoFields.push({ label: "Kipas", foto: k.peralatan.kipas, key: `${k.id}-kipas` });
+
+  const allKandangPhotos = fotoFields.map((f) => ({
+    id: f.key,
+    url: f.foto.foto!.preview!,
+    title: `${f.label} - ${k.nama || `Kandang ${index + 1}`}`,
+    caption: k.nama || `Kandang ${index + 1}`,
+  }));
+
   return (
     <Card withBorder padding="lg" radius="md" shadow="xs">
       <Group justify="space-between" wrap="wrap" gap="sm" mb="md">
@@ -629,48 +641,30 @@ function KandangCard({ k, index, onOpenLightbox }: { k: Kandang; index: number; 
             </Group>
           </Grid.Col>
         )}
-      </Grid>
-    </Card>
-  );
-}
 
-function DokumenTab({ p, onOpenLightbox }: { p: Peternak; onOpenLightbox: (photos: PhotoItem[], index: number) => void }) {
-  const allPhotos = collectPhotos(p);
-  if (allPhotos.length === 0) {
-    return (
-      <EmptyState
-        icon={IconPhoto}
-        title="Belum ada dokumen"
-        description="Tidak ada foto kondisi atau peralatan yang diunggah."
-      />
-    );
-  }
-  return (
-    <Card withBorder padding="lg" radius="md" shadow="xs">
-      <Group gap="sm" mb="md">
-        <ThemeIcon variant="light" color="primary" size="lg" radius="md">
-          <IconPhoto size={20} />
-        </ThemeIcon>
-        <Text fw={700} fz="lg">Galeri Foto</Text>
-        <Badge variant="light" color="primary" radius="sm">{allPhotos.length} foto</Badge>
-      </Group>
-      <Grid gutter="sm">
-        {allPhotos.map((photo, i) => (
-          <Grid.Col key={i} span={{ base: 6, sm: 4, md: 3 }}>
-            <Stack gap={4}>
-              <PhotoThumb
-                        url={photo.preview}
-                        title={photo.label}
-                        caption={p.nama}
-                        allPhotos={allPhotos.map((x) => ({ id: x.label, url: x.preview, title: x.label, caption: p.nama }))}
-                        index={i}
-                        onOpen={(i: number) => onOpenLightbox(allPhotos.map((x) => ({ id: x.label, url: x.preview, title: x.label, caption: p.nama })), i)}
-                        height={88}
-                      />
-              <Text fz="xs" fw={600} ta="center" c="dimmed">{photo.label}</Text>
-            </Stack>
+        {allKandangPhotos.length > 0 && (
+          <Grid.Col span={12}>
+            <Divider my="xs" />
+            <Text fz="xs" fw={700} tt="uppercase" c="dimmed" lts="0.06em" mb="sm">
+              <Group gap={4}><IconPhoto size={12} /> Foto</Group>
+            </Text>
+            <Grid gutter="sm">
+              {allKandangPhotos.map((photo, i) => (
+                <Grid.Col key={photo.id} span={{ base: 6, sm: 4, md: 3 }}>
+                  <PhotoThumb
+                    url={photo.url}
+                    title={photo.title}
+                    caption={photo.caption}
+                    allPhotos={allKandangPhotos}
+                    index={i}
+                    onOpen={(idx) => onOpenLightbox(allKandangPhotos, idx)}
+                    height={100}
+                  />
+                </Grid.Col>
+              ))}
+            </Grid>
           </Grid.Col>
-        ))}
+        )}
       </Grid>
     </Card>
   );
@@ -766,23 +760,6 @@ function CondRow({ label, v }: { label: string; v: any }) {
       <StatusBadge variant="kondisi" value={v} />
     </Group>
   );
-}
-
-function collectPhotos(p: Peternak) {
-  const out: { label: string; preview: string }[] = [];
-  if (p.ktp.preview) out.push({ label: "KTP", preview: p.ktp.preview });
-  p.kandang.forEach((k, i) => {
-    const c = k.kondisi;
-    if (c.dinding.foto) out.push({ label: `${k.nama || `Kandang ${i + 1}`} — Dinding`, preview: c.dinding.foto.preview! });
-    if (c.atap.foto) out.push({ label: `${k.nama || `Kandang ${i + 1}`} — Atap`, preview: c.atap.foto.preview! });
-    if (c.lantai.foto) out.push({ label: `${k.nama || `Kandang ${i + 1}`} — Lantai`, preview: c.lantai.foto.preview! });
-    const pe = k.peralatan;
-    if (pe.tempatMinum.foto) out.push({ label: `${k.nama || `Kandang ${i + 1}`} — Tempat Minum`, preview: pe.tempatMinum.foto.preview! });
-    if (pe.tempatMakan.foto) out.push({ label: `${k.nama || `Kandang ${i + 1}`} — Tempat Makan`, preview: pe.tempatMakan.foto.preview! });
-    if (pe.brooding.foto) out.push({ label: `${k.nama || `Kandang ${i + 1}`} — Brooding`, preview: pe.brooding.foto.preview! });
-    if (pe.kipas.foto) out.push({ label: `${k.nama || `Kandang ${i + 1}`} — Kipas`, preview: pe.kipas.foto.preview! });
-  });
-  return out;
 }
 
 function exportJson(p: Peternak) {
