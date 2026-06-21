@@ -527,22 +527,38 @@ function KandangListTab({ p, onOpenLightbox }: { p: Peternak; onOpenLightbox: (p
 }
 
 function KandangCard({ k, index, onOpenLightbox }: { k: Kandang; index: number; onOpenLightbox: (photos: PhotoItem[], index: number) => void }) {
-  const fotoFields: { label: string; foto: Kandang["kondisi"]["dinding"]; key: string }[] = [];
-
-  if (k.kondisi.dinding.foto) fotoFields.push({ label: "Dinding", foto: k.kondisi.dinding, key: `${k.id}-dinding` });
-  if (k.kondisi.atap.foto) fotoFields.push({ label: "Atap", foto: k.kondisi.atap, key: `${k.id}-atap` });
-  if (k.kondisi.lantai.foto) fotoFields.push({ label: "Lantai", foto: k.kondisi.lantai, key: `${k.id}-lantai` });
-  if (k.peralatan.tempatMakan.foto) fotoFields.push({ label: "Tempat Makan", foto: k.peralatan.tempatMakan, key: `${k.id}-tmp_mkn` });
-  if (k.peralatan.tempatMinum.foto) fotoFields.push({ label: "Tempat Minum", foto: k.peralatan.tempatMinum, key: `${k.id}-tmp_mnm` });
-  if (k.peralatan.brooding.foto) fotoFields.push({ label: "Brooding", foto: k.peralatan.brooding, key: `${k.id}-brooding` });
-  if (k.peralatan.kipas.foto) fotoFields.push({ label: "Kipas", foto: k.peralatan.kipas, key: `${k.id}-kipas` });
-
-  const allKandangPhotos = fotoFields.map((f) => ({
-    id: f.key,
-    url: f.foto.foto!.preview!,
-    title: `${f.label} - ${k.nama || `Kandang ${index + 1}`}`,
+  const buildPhotos = () => {
+    const items: { label: string; preview: string; key: string }[] = [];
+    const push = (label: string, key: string, preview?: string | null) => {
+      if (preview) items.push({ label, key, preview });
+    };
+    push("Dinding", `${k.id}-dinding`, k.kondisi.dinding.foto?.preview);
+    push("Atap", `${k.id}-atap`, k.kondisi.atap.foto?.preview);
+    push("Lantai", `${k.id}-lantai`, k.kondisi.lantai.foto?.preview);
+    push("Tempat Makan", `${k.id}-tmp_mkn`, k.peralatan.tempatMakan.foto?.preview);
+    push("Tempat Minum", `${k.id}-tmp_mnm`, k.peralatan.tempatMinum.foto?.preview);
+    push("Brooding", `${k.id}-brooding`, k.peralatan.brooding.foto?.preview);
+    push("Kipas", `${k.id}-kipas`, k.peralatan.kipas.foto?.preview);
+    return items;
+  };
+  const allPhotos = buildPhotos().map((p) => ({
+    id: p.key,
+    url: p.preview,
+    title: `${p.label} - ${k.nama || `Kandang ${index + 1}`}`,
     caption: k.nama || `Kandang ${index + 1}`,
   }));
+
+  const FotoThumb = ({ label, preview, photoIndex }: { label: string; preview: string; photoIndex: number }) => (
+    <Box
+      onClick={() => onOpenLightbox(allPhotos, photoIndex)}
+      style={{ cursor: "pointer", width: 48, height: 36, borderRadius: 4, overflow: "hidden", flexShrink: 0, border: "1px solid var(--app-border)" }}
+    >
+      <img src={preview} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+    </Box>
+  );
+
+  let photoIdx = -1;
+  const nextPhotoIdx = () => { photoIdx++; return photoIdx; };
 
   return (
     <Card withBorder padding="lg" radius="md" shadow="xs">
@@ -594,11 +610,11 @@ function KandangCard({ k, index, onOpenLightbox }: { k: Kandang; index: number; 
           <Text fz="xs" fw={700} tt="uppercase" c="dimmed" lts="0.06em" mb="xs">
             Kondisi
           </Text>
-          <Grid gutter="xs">
-            <Grid.Col span={6}><CondRow label="Dinding" v={k.kondisi.dinding.kondisi} /></Grid.Col>
-            <Grid.Col span={6}><CondRow label="Atap" v={k.kondisi.atap.kondisi} /></Grid.Col>
-            <Grid.Col span={6}><CondRow label="Lantai" v={k.kondisi.lantai.kondisi} /></Grid.Col>
-          </Grid>
+          <Stack gap={4}>
+            <CondFotoRow label="Dinding" v={k.kondisi.dinding.kondisi} foto={k.kondisi.dinding.foto?.preview} photoIdx={nextPhotoIdx()} FotoThumb={FotoThumb} />
+            <CondFotoRow label="Atap" v={k.kondisi.atap.kondisi} foto={k.kondisi.atap.foto?.preview} photoIdx={nextPhotoIdx()} FotoThumb={FotoThumb} />
+            <CondFotoRow label="Lantai" v={k.kondisi.lantai.kondisi} foto={k.kondisi.lantai.foto?.preview} photoIdx={nextPhotoIdx()} FotoThumb={FotoThumb} />
+          </Stack>
         </Grid.Col>
 
         <Grid.Col span={12}>
@@ -606,10 +622,18 @@ function KandangCard({ k, index, onOpenLightbox }: { k: Kandang; index: number; 
             <Group gap={4}><IconTool size={12} /> Peralatan</Group>
           </Text>
           <Grid gutter="xs">
-            <Grid.Col span={{ base: 6, sm: 3 }}><CondRow label="Tempat Minum" v={k.peralatan.tempatMinum.kondisi} /></Grid.Col>
-            <Grid.Col span={{ base: 6, sm: 3 }}><CondRow label="Tempat Makan" v={k.peralatan.tempatMakan.kondisi} /></Grid.Col>
-            <Grid.Col span={{ base: 6, sm: 3 }}><CondRow label="Brooding" v={k.peralatan.brooding.kondisi} /></Grid.Col>
-            <Grid.Col span={{ base: 6, sm: 3 }}><CondRow label="Kipas" v={k.peralatan.kipas.kondisi} /></Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+              <CondFotoRow label="Tempat Minum" v={k.peralatan.tempatMinum.kondisi} foto={k.peralatan.tempatMinum.foto?.preview} photoIdx={nextPhotoIdx()} FotoThumb={FotoThumb} />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+              <CondFotoRow label="Tempat Makan" v={k.peralatan.tempatMakan.kondisi} foto={k.peralatan.tempatMakan.foto?.preview} photoIdx={nextPhotoIdx()} FotoThumb={FotoThumb} />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+              <CondFotoRow label="Brooding" v={k.peralatan.brooding.kondisi} foto={k.peralatan.brooding.foto?.preview} photoIdx={nextPhotoIdx()} FotoThumb={FotoThumb} />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+              <CondFotoRow label="Kipas" v={k.peralatan.kipas.kondisi} foto={k.peralatan.kipas.foto?.preview} photoIdx={nextPhotoIdx()} FotoThumb={FotoThumb} />
+            </Grid.Col>
           </Grid>
         </Grid.Col>
 
@@ -639,30 +663,6 @@ function KandangCard({ k, index, onOpenLightbox }: { k: Kandang; index: number; 
                 </Stack>
               )}
             </Group>
-          </Grid.Col>
-        )}
-
-        {allKandangPhotos.length > 0 && (
-          <Grid.Col span={12}>
-            <Divider my="xs" />
-            <Text fz="xs" fw={700} tt="uppercase" c="dimmed" lts="0.06em" mb="sm">
-              <Group gap={4}><IconPhoto size={12} /> Foto</Group>
-            </Text>
-            <Grid gutter="sm">
-              {allKandangPhotos.map((photo, i) => (
-                <Grid.Col key={photo.id} span={{ base: 6, sm: 4, md: 3 }}>
-                  <PhotoThumb
-                    url={photo.url}
-                    title={photo.title}
-                    caption={photo.caption}
-                    allPhotos={allKandangPhotos}
-                    index={i}
-                    onOpen={(idx) => onOpenLightbox(allKandangPhotos, idx)}
-                    height={100}
-                  />
-                </Grid.Col>
-              ))}
-            </Grid>
           </Grid.Col>
         )}
       </Grid>
@@ -753,11 +753,14 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
   );
 }
 
-function CondRow({ label, v }: { label: string; v: any }) {
+function CondFotoRow({ label, v, foto, photoIdx, FotoThumb }: { label: string; v: any; foto?: string | null; photoIdx: number; FotoThumb: React.FC<{ label: string; preview: string; photoIndex: number }> }) {
   return (
-    <Group justify="space-between" gap="xs" py={4}>
-      <Text fz="xs" c="dimmed">{label}</Text>
-      <StatusBadge variant="kondisi" value={v} />
+    <Group justify="space-between" gap="xs" py={4} wrap="nowrap">
+      <Group gap={6} wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
+        <Text fz="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>{label}</Text>
+        <StatusBadge variant="kondisi" value={v} />
+      </Group>
+      {foto && <FotoThumb label={label} preview={foto} photoIndex={photoIdx} />}
     </Group>
   );
 }
