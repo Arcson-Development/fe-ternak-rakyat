@@ -407,6 +407,7 @@ function AdminLoginCard() {
           </Title>
           <Text fz="sm" c="dimmed">
             Masuk untuk mengelola data peternak.
+          </Text>
       </Stack>
 
         {authError && (
@@ -453,8 +454,6 @@ function AdminLoginCard() {
             </Button>
           </Stack>
         </form>
-
-        </Text>
       </Stack>
     </Card>
   );

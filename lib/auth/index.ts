@@ -75,3 +75,9 @@ export {
   getAdminToken,
   clearAdminToken,
 } from "./adminAuth";
+
+export const DEMO_ACCOUNTS = [
+  { username: "admin", password: "admin123", name: "Admin Pusat", role: "admin" },
+  { username: "operator", password: "operator123", name: "Operator Daerah", role: "operator" },
+  { username: "viewer", password: "viewer123", name: "Viewer", role: "viewer" },
+];
