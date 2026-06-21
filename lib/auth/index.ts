@@ -47,14 +47,18 @@ export async function login(username: string, password: string): Promise<User> {
   });
 
   // Normalise response — accept several common API shapes
-  const res: Record<string, unknown> = (raw as any)?.data ?? raw ?? {};
-  const token = String(res?.token ?? res?.access_token ?? "");
-  const nested = (res?.user ?? {}) as Record<string, unknown>;
+  const rawData = (raw as any)?.data;
+  const token =
+    typeof rawData === "string"
+      ? rawData
+      : String(rawData?.token ?? rawData?.access_token ?? (raw as any)?.token ?? (raw as any)?.access_token ?? "");
+  const obj = (rawData && typeof rawData === "object" ? rawData : raw ?? {}) as Record<string, unknown>;
+  const nested = (obj?.user ?? {}) as Record<string, unknown>;
   const user: User = {
-    id: String(res?.id ?? nested?.id ?? ""),
-    name: String(res?.name ?? nested?.name ?? username),
-    email: String(res?.email ?? nested?.email ?? ""),
-    role: (res?.role ?? nested?.role ?? "admin") as User["role"],
+    id: String(obj?.id ?? nested?.id ?? ""),
+    name: String(obj?.name ?? nested?.name ?? username),
+    email: String(obj?.email ?? nested?.email ?? ""),
+    role: (obj?.role ?? nested?.role ?? "admin") as User["role"],
     token,
   };
 
