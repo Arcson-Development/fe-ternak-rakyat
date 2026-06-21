@@ -38,14 +38,30 @@ const STORAGE_KEYS = {
  * Login via real backend API only.
  */
 export async function login(username: string, password: string): Promise<User> {
-  const { data } = await api.post<{ data: User }>("/auth/login", {
-    username,
-    password,
+  const body = new URLSearchParams();
+  body.append("username", username);
+  body.append("password", password);
+
+  const { data: raw } = await api.post("/auth/admin/sign-in", body, {
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
   });
-  await setItem(STORAGE_KEYS.token, data.data.token);
-  await setItem(STORAGE_KEYS.user, data.data);
-  setSessionCookie(data.data.token);
-  return data.data;
+
+  // Normalise response — accept several common API shapes
+  const res: Record<string, unknown> = (raw as any)?.data ?? raw ?? {};
+  const token = String(res?.token ?? res?.access_token ?? "");
+  const nested = (res?.user ?? {}) as Record<string, unknown>;
+  const user: User = {
+    id: String(res?.id ?? nested?.id ?? ""),
+    name: String(res?.name ?? nested?.name ?? username),
+    email: String(res?.email ?? nested?.email ?? ""),
+    role: (res?.role ?? nested?.role ?? "admin") as User["role"],
+    token,
+  };
+
+  await setItem(STORAGE_KEYS.token, token);
+  await setItem(STORAGE_KEYS.user, user);
+  setSessionCookie(token);
+  return user;
 }
 
 export function logout(): void {
