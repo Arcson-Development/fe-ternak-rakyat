@@ -51,22 +51,12 @@ switch ke axios.
     npm install --legacy-peer-deps
     npm run dev
 
-Buka http://localhost:6091. Login dengan admin / admin123.
-
 Build production:
 
     npm run build
     npm start
 
 ---
-
-## Demo & Kredensial
-
-- Username: admin
-- Password: admin123
-
-Session disimpan di cookie siternak-session. Logout akan menghapus
-cookie + cache TanStack Query.
 
 ---
 

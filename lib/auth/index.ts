@@ -1,6 +1,6 @@
 "use client";
 
-import { api, toApiError } from "../api/client";
+import { api } from "../api/client";
 import { setItem, getItem, delItem } from "../../utils/lib/localstorage";
 
 /**
@@ -19,11 +19,7 @@ function clearSessionCookie() {
   document.cookie = "siternak-session=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
 }
 
-/**
- * Minimal auth flow that talks to the real backend when available, and
- * falls back to a local "demo" session for development. Two known demo
- * accounts are accepted in the demo mode (see below).
- */
+/** Auth flow that talks to the real backend API. */
 
 export type User = {
   id: string;
@@ -38,52 +34,18 @@ const STORAGE_KEYS = {
   user: "user",
 } as const;
 
-export const DEMO_ACCOUNTS = [
-  { username: "admin", password: "admin123", name: "Admin SITERNAK", role: "admin" as const },
-  { username: "operator", password: "operator123", name: "Operator Lapangan", role: "operator" as const },
-];
-
 /**
- * Try real backend first, fall back to demo accounts when there's no
- * API URL configured. Always returns a User with a token.
+ * Login via real backend API only.
  */
 export async function login(username: string, password: string): Promise<User> {
-  // 1. Real API attempt
-  try {
-    const { data } = await api.post<{ data: User }>("/auth/login", {
-      username,
-      password,
-    });
-    await setItem(STORAGE_KEYS.token, data.data.token);
-    await setItem(STORAGE_KEYS.user, data.data);
-    setSessionCookie(data.data.token);
-    return data.data;
-  } catch (err) {
-    // 2. Demo fallback (only if API URL is not set)
-    const isDemoMode = !process.env.NEXT_PUBLIC_DOMAIN_API;
-    if (!isDemoMode) throw toApiError(err);
-
-    const acc = DEMO_ACCOUNTS.find(
-      (a) => a.username === username && a.password === password
-    );
-    if (!acc) {
-      throw {
-        status: 401,
-        message: "Username atau password salah",
-      };
-    }
-    const user: User = {
-      id: `user-${acc.username}`,
-      name: acc.name,
-      email: `${acc.username}@siternak.id`,
-      role: acc.role,
-      token: `demo-${acc.username}-${Date.now()}`,
-    };
-    await setItem(STORAGE_KEYS.token, user.token);
-    await setItem(STORAGE_KEYS.user, user);
-    setSessionCookie(user.token);
-    return user;
-  }
+  const { data } = await api.post<{ data: User }>("/auth/login", {
+    username,
+    password,
+  });
+  await setItem(STORAGE_KEYS.token, data.data.token);
+  await setItem(STORAGE_KEYS.user, data.data);
+  setSessionCookie(data.data.token);
+  return data.data;
 }
 
 export function logout(): void {

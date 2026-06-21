@@ -320,7 +320,7 @@ export default function LandingPage() {
             icon={<IconCircleNumber1 size={28} />}
             color="primary"
             title="Login sebagai Admin"
-            body="Gunakan akun admin pada formulir di atas untuk masuk ke dasbor. Akun default: admin / admin123 (mode demo)."
+            body="Gunakan akun admin pada formulir di atas untuk masuk ke dasbor."
           />
           <GuideStep
             icon={<IconCircleNumber2 size={28} />}
@@ -407,8 +407,7 @@ function AdminLoginCard() {
           </Title>
           <Text fz="sm" c="dimmed">
             Masuk untuk mengelola data peternak.
-          </Text>
-        </Stack>
+      </Stack>
 
         {authError && (
           <Alert color="red" variant="light" icon={<IconShieldCheck size={16} />}>
@@ -455,8 +454,6 @@ function AdminLoginCard() {
           </Stack>
         </form>
 
-        <Text fz="xs" c="dimmed" ta="center">
-          Default demo: <b>admin</b> / <b>admin123</b>
         </Text>
       </Stack>
     </Card>
