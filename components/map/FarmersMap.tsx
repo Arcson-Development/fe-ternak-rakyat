@@ -7,6 +7,8 @@ import { IconMap2 } from "@tabler/icons-react";
 // Patches `L.Icon.Default` before any marker is created — must run
 // before the dynamic leaflet import further down.
 import "./leafletInit";
+// Cluster plugin: close pins auto-combine into a single numbered bubble.
+import "leaflet.markercluster";
 
 type Lokasi = { lat: number; lng: number; label: string; id: number };
 
@@ -34,6 +36,7 @@ export default function FarmersMap({ points, height = 360, onSelect, selectedDat
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
   const markerMapRef = useRef<Map<number, any>>(new Map());
+  const clusterRef = useRef<any>(null);
   const resizeObs = useRef<ResizeObserver | null>(null);
 
   useEffect(() => {
@@ -78,12 +81,30 @@ export default function FarmersMap({ points, height = 360, onSelect, selectedDat
         (map as any)._visObs = visObs;
       }
 
-      // Add markers
+      // Add markers via cluster group — close pins auto-combine into
+      // a single numbered bubble; clicking zooms in to split them.
       const valid = points.filter(
         (p) => typeof p.lat === "number" && typeof p.lng === "number"
       );
-      const bounds: [number, number][] = [];
-      const layer = L.layerGroup().addTo(map);
+      const cluster = (L as any).markerClusterGroup({
+        showCoverageOnHover: false,
+        spiderfyOnMaxZoom: true,
+        chunkedLoading: true,
+        maxClusterRadius: 50,
+        iconCreateFunction: (c: any) => {
+          const count = c.getChildCount();
+          return L.divIcon({
+            html: `<div style="
+              background:#f59e0b;color:#fff;border:3px solid #fff;
+              border-radius:50%;width:38px;height:38px;display:flex;
+              align-items:center;justify-content:center;font-weight:700;
+              font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,.4);
+            ">${count}</div>`,
+            className: "marker-cluster-custom",
+            iconSize: L.point(38, 38, true),
+          });
+        },
+      });
       const markerMap = new Map<number, any>();
       valid.forEach((p) => {
         const marker = L.circleMarker([p.lat, p.lng], {
@@ -93,19 +114,19 @@ export default function FarmersMap({ points, height = 360, onSelect, selectedDat
           weight: 2,
           opacity: 1,
           fillOpacity: 0.9,
-        })
-          .addTo(layer)
-          .bindPopup(`<div style="font-size:12px;">${p.label}</div>`);
+        });
         marker.on("click", () => onSelect?.(p.id));
         markerMap.set(p.id, marker);
-        bounds.push([p.lat, p.lng]);
+        cluster.addLayer(marker);
       });
+      map.addLayer(cluster);
       markerMapRef.current = markerMap;
-      if (bounds.length === 1) {
+      clusterRef.current = cluster;
+      if (valid.length === 1) {
         // Single point — set view directly
         map.setView([valid[0].lat, valid[0].lng], 15);
-      } else if (bounds.length > 1) {
-        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 9 });
+      } else if (valid.length > 1) {
+        map.fitBounds(cluster.getBounds(), { padding: [40, 40], maxZoom: 9 });
       }
       // Force Leaflet to re-measure container after mount
       // (handles hidden tab containers, layout shifts, etc.)
