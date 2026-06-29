@@ -333,10 +333,6 @@ export async function exportFormToExcel(
         ...config,
         params: { start_date: startDate, end_date: endDate },
         responseType: "blob",
-        // Some servers send application/octet-stream or even the wrong
-        // charset on top of a valid XLSX body. Letting axios follow
-        // the responseType hint is enough; we just never let it parse
-        // the bytes as JSON.
       }
     );
     return response.data;
@@ -344,6 +340,43 @@ export async function exportFormToExcel(
     if ((err as any)?.response?.status === 401) clearAdminToken();
     throw toApiError(err);
   }
+}
+
+// ---------- farm locations (peternak-gated) ----------
+//
+// Returns peternak coordinates filtered by type (Ayam Petelur / Ayam Pedaging).
+// Used by the dashboard map.
+
+export type FarmLocationKandang = {
+  latitude: string;
+  longitude: string;
+};
+
+export type FarmLocationItem = {
+  id: number;
+  kategori_peternak: string;
+  form_peternakan_kandang: FarmLocationKandang[];
+};
+
+export type FarmLocationResponse = {
+  status: number;
+  error: boolean;
+  message: string;
+  data: FarmLocationItem[];
+};
+
+export async function fetchFarmLocations(
+  type: "Ayam Petelur" | "Ayam Pedaging"
+): Promise<FarmLocationItem[]> {
+  const config = await authedPeternakAxios();
+  const { data } = await axios.get<FarmLocationResponse>(
+    `${DOMAIN_API}/form/get-latitude-longitude`,
+    {
+      ...config,
+      params: { type },
+    }
+  );
+  return data.data ?? [];
 }
 
 // ---------- master data ----------

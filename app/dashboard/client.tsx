@@ -4,11 +4,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   Avatar,
   Badge,
+  Box,
   Button,
   Card,
   Container,
   Grid,
   Group,
+  Loader,
   Stack,
   Text,
   ThemeIcon,
@@ -34,7 +36,9 @@ import { useFormList, formItemToPeternak } from "../../hooks/useTernakRakyat";
 import {
   JENIS_USAHA_LABEL,
   KATEGORI_LABEL,
+  useFarmLocations,
 } from "../../hooks/useTernakRakyat";
+import type { FarmLocationItem } from "../../lib/api";
 import { KategoriDonut, TopKabupatenBar, TrendArea } from "../../components/charts";
 import dynamic from "next/dynamic";
 
@@ -66,6 +70,8 @@ function DashboardContent() {
     return () => clearTimeout(t);
   }, []);
   const router = useRouter();
+  const [mapType, setMapType] = useState<"Ayam Petelur" | "Ayam Pedaging">("Ayam Petelur");
+  const { data: locationData } = useFarmLocations(mapType);
   // Pull a representative sample (200 most-recent records) directly
   // from the backend so the overview stats reflect the server's
   // view, not whatever happens to be in the local store. For the
@@ -162,26 +168,21 @@ function DashboardContent() {
       .map(([name, value]) => ({ name, value }));
   }, [list]);
 
-  // Map: one point per farmer (first valid coord from their first kandang)
+  // Map: points from the farm-locations API, grouped by peternak
   const mapPoints = useMemo(() => {
     const out: { lat: number; lng: number; label: string }[] = [];
-    list.forEach((p) => {
-      for (const k of p.kandang) {
-        if (
-          typeof k.lokasi.lat === "number" &&
-          typeof k.lokasi.lng === "number"
-        ) {
-          out.push({
-            lat: k.lokasi.lat,
-            lng: k.lokasi.lng,
-            label: `${p.nama}${k.nama ? ` — ${k.nama}` : ""}`,
-          });
-          break;
+    (locationData ?? []).forEach((item: FarmLocationItem) => {
+      const label = `${item.kategori_peternak} #${item.id}`;
+      (item.form_peternakan_kandang ?? []).forEach((k: { latitude: string; longitude: string }) => {
+        const lat = parseFloat(k.latitude);
+        const lng = parseFloat(k.longitude);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          out.push({ lat, lng, label });
         }
-      }
+      });
     });
     return out;
-  }, [list]);
+  }, [locationData]);
 
   return (
     <Container size="xl" px={0}>
@@ -296,7 +297,33 @@ function DashboardContent() {
                   <IconMap2 size={18} />
                 </ThemeIcon>
               </Group>
-              <FarmersMap points={mapPoints} height={280} />
+              <Group gap="xs" mb="sm">
+                <Button
+                  size="xs"
+                  variant={mapType === "Ayam Petelur" ? "filled" : "outline"}
+                  color={mapType === "Ayam Petelur" ? "yellow" : "gray"}
+                  onClick={() => setMapType("Ayam Petelur")}
+                  radius="xl"
+                >
+                  Ayam Petelur
+                </Button>
+                <Button
+                  size="xs"
+                  variant={mapType === "Ayam Pedaging" ? "filled" : "outline"}
+                  color={mapType === "Ayam Pedaging" ? "blue" : "gray"}
+                  onClick={() => setMapType("Ayam Pedaging")}
+                  radius="xl"
+                >
+                  Ayam Pedaging
+                </Button>
+              </Group>
+              {locationData === undefined ? (
+                <Box style={{ height: 280, display: "grid", placeItems: "center" }}>
+                  <Loader size="sm" />
+                </Box>
+              ) : (
+                <FarmersMap points={mapPoints} height={280} />
+              )}
             </Card>
           </Grid.Col>
         </Grid>

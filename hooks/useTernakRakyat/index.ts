@@ -17,6 +17,7 @@ import {
   exportFormToExcel,
   fetchFormById,
   fetchFormList,
+  fetchFarmLocations,
   fetchKabupaten,
   fetchKecamatan,
   fetchKelurahan,
@@ -311,6 +312,16 @@ export function useDeleteForm() {
   });
 }
 
+// ---------- farm locations ----------
+
+export function useFarmLocations(type: "Ayam Petelur" | "Ayam Pedaging") {
+  return useQuery({
+    queryKey: ["form", "locations", type],
+    queryFn: () => fetchFarmLocations(type),
+    staleTime: 60 * 1000,
+  });
+}
+
 /** Lets the UI show which mode we're in (good for the Settings page). */
 export const isMockMode = !USE_REAL_API;
 
@@ -319,3 +330,4 @@ export { useTernakStore } from "./store/ternakStore";
 export { formItemToPeternak } from "./adapter";
 export type { FormItem, FormListResponse } from "../../lib/api";
 export { approveForm, rejectForm, exportFormToExcel } from "../../lib/api";
+export { fetchFarmLocations } from "../../lib/api";
