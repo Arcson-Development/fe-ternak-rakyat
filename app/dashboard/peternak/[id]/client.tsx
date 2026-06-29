@@ -74,7 +74,6 @@ import { buildSinglePeternakWorkbook, downloadWorkbook, TIMESTAMP } from "../../
 import dynamic from "next/dynamic";
 
 const FarmersMap = dynamic(() => import("../../../../components/map/FarmersMap"), { ssr: false });
-const MapSingle = dynamic(() => import("../../../../components/map/MapSingle"), { ssr: false });
 
 function PeternakDetailContent() {
   const [ready, setReady] = useState(false);
@@ -604,7 +603,7 @@ function KandangCard({ k, index, onOpenLightbox }: { k: Kandang; index: number; 
                   </Anchor>
                 </Group>
                 <Box style={{ height: 160, borderRadius: 8, overflow: "hidden", border: "1px solid var(--app-border)" }}>
-                  <MapSingle lat={k.lokasi.lat} lng={k.lokasi.lng} label={k.nama || `Kandang ${index + 1}`} />
+                  <FarmersMap points={[{ lat: k.lokasi.lat, lng: k.lokasi.lng, label: k.nama || `Kandang ${index + 1}`, id: 0 }]} height={160} />
                 </Box>
               </>
             ) : (
