@@ -76,12 +76,21 @@ export default function FarmersMap({ points, height = 360, onSelect, selectedDat
         bounds.push([p.lat, p.lng]);
       });
       markerMapRef.current = markerMap;
-      if (bounds.length > 0) {
+      if (bounds.length === 1) {
+        // Single point — set view directly
+        map.setView([valid[0].lat, valid[0].lng], 15);
+      } else if (bounds.length > 1) {
         map.fitBounds(bounds, { padding: [40, 40], maxZoom: 9 });
       }
-      // Handle hidden containers (e.g., non-active tabs):
-      // force Leaflet to re-read dimensions after mount.
-      setTimeout(() => map.invalidateSize(), 200);
+      // Force Leaflet to re-measure container after mount
+      // (handles hidden tab containers, layout shifts, etc.)
+      requestAnimationFrame(() => {
+        map.invalidateSize();
+        // Second attempt after tiles start loading
+        setTimeout(() => map.invalidateSize(), 100);
+        // Third attempt for slow first paint
+        setTimeout(() => map.invalidateSize(), 500);
+      });
     })();
     return () => {
       cancelled = true;

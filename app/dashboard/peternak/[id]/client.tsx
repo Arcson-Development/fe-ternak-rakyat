@@ -73,6 +73,8 @@ import {
 import { buildSinglePeternakWorkbook, downloadWorkbook, TIMESTAMP } from "../../../../lib/export";
 import dynamic from "next/dynamic";
 
+const FarmersMap = dynamic(() => import("../../../../components/map/FarmersMap"), { ssr: false });
+
 function PeternakDetailContent() {
   const [ready, setReady] = useState(false);
   useEffect(() => {
@@ -592,21 +594,15 @@ function KandangCard({ k, index, onOpenLightbox }: { k: Kandang; index: number; 
               fz="xs"
               c="primary.7"
               target="_blank"
-              href={`https://www.google.com/maps?q=${k.lokasi.lat},${k.lokasi.lng}`}
+              href={`https://www.openstreetmap.org/?mlat=${k.lokasi.lat}&mlon=${k.lokasi.lng}#map=15/${k.lokasi.lat}/${k.lokasi.lng}`}
             >
               Buka Peta
             </Anchor>
           </Group>
           <Box style={{ position: "relative", width: "100%", height: 280, borderRadius: 8, overflow: "hidden", border: "1px solid var(--app-border)" }}>
-            <iframe
-              width="100%"
-              height="100%"
-              frameBorder="0"
-              scrolling="no"
-              src={`https://maps.google.com/maps?q=${k.lokasi.lat},${k.lokasi.lng}&hl=id&z=15&output=embed`}
-              style={{ border: 0, width: "100%", height: "100%", display: "block" }}
-              title={k.nama || `Kandang ${index + 1}`}
-              loading="lazy"
+            <FarmersMap
+              points={[{ lat: k.lokasi.lat, lng: k.lokasi.lng, label: k.nama || `Kandang ${index + 1}`, id: 0 }]}
+              height={280}
             />
           </Box>
         </Box>
