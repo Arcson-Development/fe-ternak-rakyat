@@ -13,14 +13,13 @@ type Lokasi = { lat: number; lng: number; label: string; id: number };
 type Props = {
   points: Lokasi[];
   height?: number;
-  onSelect?: (id: number) => void;
 };
 
 /**
  * Multi-marker Leaflet map for the dashboard. Each farmer's first
  * available coordinate is shown as a pin. Click a pin to focus it.
  */
-export default function FarmersMap({ points, height = 360, onSelect }: Props) {
+export default function FarmersMap({ points, height = 360 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
 
@@ -49,7 +48,7 @@ export default function FarmersMap({ points, height = 360, onSelect }: Props) {
       const bounds: [number, number][] = [];
       const layer = L.layerGroup().addTo(map);
       valid.forEach((p) => {
-        const marker = L.circleMarker([p.lat, p.lng], {
+        L.circleMarker([p.lat, p.lng], {
           radius: 8,
           fillColor: "#f59e0b",
           color: "#fff",
@@ -58,8 +57,13 @@ export default function FarmersMap({ points, height = 360, onSelect }: Props) {
           fillOpacity: 0.9,
         })
           .addTo(layer)
-          .bindPopup(`<div style="font-size:12px;font-weight:600;">${p.label}</div>`);
-        marker.on("click", () => onSelect?.(p.id));
+          .bindPopup(`
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px;">${p.label}</div>
+            <a href="/dashboard/peternak/${p.id}"
+               style="font-size:11px;color:#1c7ed6;text-decoration:none;display:inline-block;margin-top:2px;">
+              Lihat Detail &rarr;
+            </a>
+          `);
         bounds.push([p.lat, p.lng]);
       });
       if (bounds.length > 0) {

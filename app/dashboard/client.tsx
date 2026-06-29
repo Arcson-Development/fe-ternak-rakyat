@@ -7,9 +7,7 @@ import {
   Box,
   Button,
   Card,
-  Center,
   Container,
-  Drawer,
   Grid,
   Group,
   Loader,
@@ -39,9 +37,7 @@ import {
   JENIS_USAHA_LABEL,
   KATEGORI_LABEL,
   useFarmLocations,
-  useFormById,
 } from "../../hooks/useTernakRakyat";
-import type { FarmLocationItem } from "../../lib/api";
 import { KategoriDonut, TopKabupatenBar, TrendArea } from "../../components/charts";
 import dynamic from "next/dynamic";
 
@@ -75,9 +71,6 @@ function DashboardContent() {
   const router = useRouter();
   const [mapType, setMapType] = useState<"Ayam Petelur" | "Ayam Pedaging">("Ayam Petelur");
   const { data: locationData, isError: locError } = useFarmLocations(mapType);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const { data: selectedPeternak } = useFormById(selectedId ?? undefined);
-  const selectedOpen = selectedId !== null;
   // Pull a representative sample (200 most-recent records) directly
   // from the backend so the overview stats reflect the server's
   // view, not whatever happens to be in the local store. For the
@@ -177,7 +170,7 @@ function DashboardContent() {
   // Map: points from the farm-locations API, grouped by peternak
   const mapPoints = useMemo(() => {
     const out: { lat: number; lng: number; label: string; id: number }[] = [];
-    (locationData ?? []).forEach((item: FarmLocationItem) => {
+    (locationData ?? []).forEach((item: { id: number; kategori_peternak: string; form_peternakan_kandang: { latitude: string; longitude: string }[] }) => {
       const label = `${item.kategori_peternak} #${item.id}`;
       (item.form_peternakan_kandang ?? []).forEach((k: { latitude: string; longitude: string }) => {
         const lat = parseFloat(k.latitude);
@@ -246,7 +239,7 @@ function DashboardContent() {
               <Text fz="sm" c="red">Gagal memuat data peta</Text>
             </Box>
           ) : (
-            <FarmersMap points={mapPoints} height={360} onSelect={setSelectedId} />
+            <FarmersMap points={mapPoints} height={360} />
           )}
         </Card>
 
@@ -450,64 +443,6 @@ function DashboardContent() {
           </Grid.Col>
         </Grid>
       </Stack>
-
-      {/* ── Detail Drawer ── */}
-      <Drawer
-        opened={selectedOpen}
-        onClose={() => setSelectedId(null)}
-        title={selectedPeternak ? selectedPeternak.nama : "Memuat..."}
-        position="right"
-        size="md"
-        padding="lg"
-      >
-        {!selectedPeternak ? (
-          <Center mih={200}><Loader size="sm" /></Center>
-        ) : (
-          <Stack gap="md">
-            <Group gap="xs">
-              <Text fw={600} size="sm" c="dimmed">Kategori:</Text>
-              <Badge variant="light" color="primary">
-                {selectedPeternak.kategori_peternak}
-              </Badge>
-            </Group>
-            <Group gap="xs">
-              <Text fw={600} size="sm" c="dimmed">No. KTP:</Text>
-              <Text size="sm">{selectedPeternak.ktp_no || "—"}</Text>
-            </Group>
-            <Group gap="xs">
-              <Text fw={600} size="sm" c="dimmed">Alamat:</Text>
-              <Text size="sm">
-                {selectedPeternak.alamat}, {selectedPeternak.kelurahan},{" "}
-                {selectedPeternak.kecamatan}, {selectedPeternak.kabupaten}
-              </Text>
-            </Group>
-            <Group gap="xs">
-              <Text fw={600} size="sm" c="dimmed">Kandang:</Text>
-              <Text size="sm">
-                {selectedPeternak.form_peternakan_kandang?.length ?? 0} kandang
-              </Text>
-            </Group>
-            <Group gap="xs">
-              <Text fw={600} size="sm" c="dimmed">Tgl Daftar:</Text>
-              <Text size="sm">
-                {new Date(selectedPeternak.created_at).toLocaleDateString("id-ID", {
-                  day: "2-digit", month: "long", year: "numeric",
-                })}
-              </Text>
-            </Group>
-            <Button
-              fullWidth
-              mt="md"
-              onClick={() => {
-                setSelectedId(null);
-                router.push(`/dashboard/peternak/${selectedPeternak.id}`);
-              }}
-            >
-              Lihat Detail Lengkap
-            </Button>
-          </Stack>
-        )}
-      </Drawer>
     </Container>
   );
 }
