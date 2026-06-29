@@ -115,6 +115,7 @@ export default function FarmersMap({ points, height = 360, onSelect, selectedDat
           opacity: 1,
           fillOpacity: 0.9,
         });
+        marker.bindPopup(""); // placeholder; content filled by selectedData effect
         marker.on("click", () => onSelect?.(p.id));
         markerMap.set(p.id, marker);
         cluster.addLayer(marker);
@@ -177,7 +178,14 @@ export default function FarmersMap({ points, height = 360, onSelect, selectedDat
         Lihat Detail &rarr;
       </a>
     `);
-    marker.openPopup();
+    // If marker is inside a cluster, zoom in to expose it first.
+    if (clusterRef.current && typeof clusterRef.current.zoomToShowLayer === "function") {
+      clusterRef.current.zoomToShowLayer(marker, () => {
+        marker.openPopup();
+      });
+    } else {
+      marker.openPopup();
+    }
   }, [selectedData]);
 
   if (points.length === 0) {
