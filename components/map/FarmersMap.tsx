@@ -14,15 +14,26 @@ type Props = {
   points: Lokasi[];
   height?: number;
   onSelect?: (id: number) => void;
+  selectedData?: {
+    id: number;
+    nama: string;
+    kategori_peternak: string;
+    alamat: string;
+    kelurahan: string;
+    kecamatan: string;
+    kabupaten: string;
+    ktp_no?: string;
+    kandangCount: number;
+  } | null;
 };
 
 /**
- * Multi-marker Leaflet map for the dashboard. Each farmer's first
- * available coordinate is shown as a pin. Click a pin to focus it.
+ * Multi-marker Leaflet map with rich popups showing peternak detail.
  */
-export default function FarmersMap({ points, height = 360, onSelect }: Props) {
+export default function FarmersMap({ points, height = 360, onSelect, selectedData }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
+  const markerMapRef = useRef<Map<number, any>>(new Map());
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -31,7 +42,7 @@ export default function FarmersMap({ points, height = 360, onSelect }: Props) {
       const L = (await import("leaflet")).default;
       if (cancelled || !containerRef.current) return;
       const map = L.map(containerRef.current, {
-        center: [-2.5, 118], // tengah Indonesia
+        center: [-2.5, 118],
         zoom: 5,
         scrollWheelZoom: true,
         zoomControl: true,
@@ -42,12 +53,13 @@ export default function FarmersMap({ points, height = 360, onSelect }: Props) {
       }).addTo(map);
       mapRef.current = map;
 
-      // Add markers after map is ready
+      // Add markers
       const valid = points.filter(
         (p) => typeof p.lat === "number" && typeof p.lng === "number"
       );
       const bounds: [number, number][] = [];
       const layer = L.layerGroup().addTo(map);
+      const markerMap = new Map<number, any>();
       valid.forEach((p) => {
         const marker = L.circleMarker([p.lat, p.lng], {
           radius: 8,
@@ -58,16 +70,12 @@ export default function FarmersMap({ points, height = 360, onSelect }: Props) {
           fillOpacity: 0.9,
         })
           .addTo(layer)
-          .bindPopup(`
-            <div style="font-size:13px;font-weight:700;margin-bottom:4px;">${p.label}</div>
-            <a href="/dashboard/peternak/${p.id}"
-               style="font-size:11px;color:#1c7ed6;text-decoration:none;display:inline-block;margin-top:2px;">
-              Lihat Detail &rarr;
-            </a>
-          `);
+          .bindPopup(`<div style="font-size:12px;">${p.label}</div>`);
         marker.on("click", () => onSelect?.(p.id));
+        markerMap.set(p.id, marker);
         bounds.push([p.lat, p.lng]);
       });
+      markerMapRef.current = markerMap;
       if (bounds.length > 0) {
         map.fitBounds(bounds, { padding: [40, 40], maxZoom: 9 });
       }
@@ -78,8 +86,34 @@ export default function FarmersMap({ points, height = 360, onSelect }: Props) {
         mapRef.current.remove();
         mapRef.current = null;
       }
+      markerMapRef.current = new Map();
     };
   }, [points]);
+
+  // Update popup when detail data arrives
+  useEffect(() => {
+    if (!selectedData) return;
+    const marker = markerMapRef.current.get(selectedData.id);
+    if (!marker) return;
+    const k = selectedData;
+    marker.setPopupContent(`
+      <div style="font-size:14px;font-weight:700;margin-bottom:2px;">${k.nama}</div>
+      <div style="font-size:12px;color:#666;margin-bottom:6px;">
+        ${k.kategori_peternak} &middot; #${k.id}
+      </div>
+      <div style="font-size:11px;line-height:1.5;margin-bottom:4px;">
+        ${k.alamat}, ${k.kelurahan}, ${k.kecamatan}, ${k.kabupaten}
+      </div>
+      <div style="font-size:11px;color:#888;margin-bottom:6px;">
+        ${k.ktp_no ? `KTP: ${k.ktp_no} &middot; ` : ""}${k.kandangCount} kandang
+      </div>
+      <a href="/dashboard/peternak/${k.id}"
+         style="font-size:11px;color:#1c7ed6;text-decoration:none;font-weight:600;">
+        Lihat Detail &rarr;
+      </a>
+    `);
+    marker.openPopup();
+  }, [selectedData]);
 
   if (points.length === 0) {
     return (

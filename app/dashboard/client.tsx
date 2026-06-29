@@ -243,45 +243,24 @@ function DashboardContent() {
               <Text fz="sm" c="red">Gagal memuat data peta</Text>
             </Box>
           ) : (
-            <FarmersMap points={mapPoints} height={360} onSelect={setSelectedId} />
+            <FarmersMap
+              points={mapPoints}
+              height={360}
+              onSelect={setSelectedId}
+              selectedData={selectedDetail ? {
+                id: selectedDetail.id,
+                nama: selectedDetail.nama,
+                kategori_peternak: selectedDetail.kategori_peternak,
+                alamat: selectedDetail.alamat,
+                kelurahan: selectedDetail.kelurahan,
+                kecamatan: selectedDetail.kecamatan,
+                kabupaten: selectedDetail.kabupaten,
+                ktp_no: selectedDetail.ktp_no,
+                kandangCount: selectedDetail.form_peternakan_kandang?.length ?? 0,
+              } : null}
+            />
           )}
         </Card>
-
-        {/* ── Selected Peternak Info ── */}
-        {selectedDetail && (
-          <Card padding="md" radius="md" withBorder shadow="xs">
-            <Group justify="space-between" align="flex-start">
-              <Stack gap={4}>
-                <Text fw={700} fz="md">{selectedDetail.nama}</Text>
-                <Group gap="xs">
-                  <Badge variant="light" color="primary" size="sm">
-                    {selectedDetail.kategori_peternak}
-                  </Badge>
-                  <Text fz="xs" c="dimmed">#{selectedDetail.id}</Text>
-                </Group>
-                <Text fz="sm" mt={4}>
-                  {selectedDetail.alamat}, {selectedDetail.kelurahan},{" "}
-                  {selectedDetail.kecamatan}, {selectedDetail.kabupaten}
-                </Text>
-                <Text fz="xs" c="dimmed">
-                  {selectedDetail.ktp_no && `KTP: ${selectedDetail.ktp_no} · `}
-                  {selectedDetail.form_peternakan_kandang?.length ?? 0} kandang
-                </Text>
-              </Stack>
-              <Button
-                variant="light"
-                size="xs"
-                rightSection={<IconEye size={14} />}
-                onClick={() => {
-                  setSelectedId(null);
-                  router.push(`/dashboard/peternak/${selectedDetail.id}`);
-                }}
-              >
-                Detail
-              </Button>
-            </Group>
-          </Card>
-        )}
 
         <Grid gutter="md">
           <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
