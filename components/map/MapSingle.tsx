@@ -14,17 +14,21 @@ type Props = {
 export default function MapSingle({ lat, lng, label }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
+  const genRef = useRef(0);
 
   useEffect(() => {
     if (!containerRef.current) return;
-    // Destroy previous map if coords changed
+    // Bump generation — any in-flight async from a previous run bails out.
+    const gen = ++genRef.current;
+    // Kill previous map synchronously so the container is free.
     if (mapRef.current) {
       mapRef.current.remove();
       mapRef.current = null;
     }
     (async () => {
       const L = (await import("leaflet")).default;
-      if (!containerRef.current) return;
+      // Only the latest generation may touch the container.
+      if (gen !== genRef.current || !containerRef.current) return;
       const map = L.map(containerRef.current, {
         center: [lat, lng],
         zoom: 15,
@@ -43,11 +47,12 @@ export default function MapSingle({ lat, lng, label }: Props) {
       })
         .addTo(map)
         .bindPopup(label || "");
-      // Force Leaflet to recalculate after mount
       setTimeout(() => map.invalidateSize(), 100);
-      mapRef.current = map;
+      // Only set ref if we're still the latest generation.
+      if (gen === genRef.current) mapRef.current = map;
     })();
     return () => {
+      genRef.current++;
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
