@@ -588,9 +588,25 @@ function KandangCard({ k, index, onOpenLightbox }: { k: Kandang; index: number; 
               Lokasi
             </Text>
             {typeof k.lokasi.lat === "number" && typeof k.lokasi.lng === "number" ? (
-              <Box style={{ height: 160, borderRadius: 8, overflow: "hidden", border: "1px solid var(--app-border)" }}>
-                <MapSingle lat={k.lokasi.lat} lng={k.lokasi.lng} label={k.nama || `Kandang ${index + 1}`} />
-              </Box>
+              <>
+                <Group gap={4}>
+                  <IconMapPin size={14} color="var(--app-primary)" />
+                  <Text fz="sm" ff="monospace">
+                    {k.lokasi.lat.toFixed(6)}, {k.lokasi.lng.toFixed(6)}
+                  </Text>
+                  <Anchor
+                    fz="xs"
+                    c="primary.7"
+                    target="_blank"
+                    href={`https://www.openstreetmap.org/?mlat=${k.lokasi.lat}&mlon=${k.lokasi.lng}#map=15/${k.lokasi.lat}/${k.lokasi.lng}`}
+                  >
+                    Buka Peta
+                  </Anchor>
+                </Group>
+                <Box style={{ height: 160, borderRadius: 8, overflow: "hidden", border: "1px solid var(--app-border)" }}>
+                  <MapSingle lat={k.lokasi.lat} lng={k.lokasi.lng} label={k.nama || `Kandang ${index + 1}`} />
+                </Box>
+              </>
             ) : (
               <Text fz="sm" c="dimmed">—</Text>
             )}

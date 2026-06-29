@@ -23,9 +23,8 @@ export default function MapSingle({ lat, lng, label }: Props) {
       const map = L.map(ref.current, {
         center: [lat, lng],
         zoom: 15,
-        scrollWheelZoom: false,
-        zoomControl: false,
-        attributionControl: false,
+        scrollWheelZoom: true,
+        zoomControl: true,
       });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
