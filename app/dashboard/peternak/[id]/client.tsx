@@ -73,8 +73,6 @@ import {
 import { buildSinglePeternakWorkbook, downloadWorkbook, TIMESTAMP } from "../../../../lib/export";
 import dynamic from "next/dynamic";
 
-const FarmersMap = dynamic(() => import("../../../../components/map/FarmersMap"), { ssr: false });
-
 function PeternakDetailContent() {
   const [ready, setReady] = useState(false);
   useEffect(() => {
@@ -371,7 +369,7 @@ function PeternakDetailInner() {
         <Tabs.Panel value="identitas" pt="md">
           <IdentitasTab p={peternak} onOpenLightbox={openLightbox} />
         </Tabs.Panel>
-        <Tabs.Panel value="kandang" pt="md" keepMounted={true}>
+        <Tabs.Panel value="kandang" pt="md">
           <KandangListTab p={peternak} onOpenLightbox={openLightbox} />
         </Tabs.Panel>
 
@@ -603,7 +601,15 @@ function KandangCard({ k, index, onOpenLightbox }: { k: Kandang; index: number; 
                   </Anchor>
                 </Group>
                 <Box style={{ height: 160, borderRadius: 8, overflow: "hidden", border: "1px solid var(--app-border)" }}>
-                  <FarmersMap points={[{ lat: k.lokasi.lat, lng: k.lokasi.lng, label: k.nama || `Kandang ${index + 1}`, id: 0 }]} height={160} />
+                  <iframe
+                    width="100%"
+                    height="100%"
+                    frameBorder="0"
+                    scrolling="no"
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${k.lokasi.lng - 0.01}%2C${k.lokasi.lat - 0.01}%2C${k.lokasi.lng + 0.01}%2C${k.lokasi.lat + 0.01}&layer=mapnik&marker=${k.lokasi.lat}%2C${k.lokasi.lng}`}
+                    style={{ borderRadius: 8 }}
+                    title={k.nama || `Kandang ${index + 1}`}
+                  />
                 </Box>
               </>
             ) : (
