@@ -578,42 +578,49 @@ function KandangCard({ k, index, onOpenLightbox }: { k: Kandang; index: number; 
 
       <Divider my="sm" />
 
-      <Grid gutter="md">
-        <Grid.Col span={{ base: 12, md: 6 }}>
-          <Stack gap="xs">
+      {typeof k.lokasi.lat === "number" && typeof k.lokasi.lng === "number" && (
+        <Box mb="md">
+          <Group gap={4} mb="xs">
             <Text fz="xs" fw={700} tt="uppercase" c="dimmed" lts="0.06em">
               Lokasi
             </Text>
-            {typeof k.lokasi.lat === "number" && typeof k.lokasi.lng === "number" ? (
+            <IconMapPin size={14} color="var(--app-primary)" />
+            <Text fz="sm" ff="monospace">
+              {k.lokasi.lat.toFixed(6)}, {k.lokasi.lng.toFixed(6)}
+            </Text>
+            <Anchor
+              fz="xs"
+              c="primary.7"
+              target="_blank"
+              href={`https://www.openstreetmap.org/?mlat=${k.lokasi.lat}&mlon=${k.lokasi.lng}#map=15/${k.lokasi.lat}/${k.lokasi.lng}`}
+            >
+              Buka Peta
+            </Anchor>
+          </Group>
+          <Box style={{ height: 240, borderRadius: 8, overflow: "hidden", border: "1px solid var(--app-border)" }}>
+            <iframe
+              width="100%"
+              height="100%"
+              frameBorder="0"
+              scrolling="no"
+              src={`https://www.openstreetmap.org/export/embed.html?bbox=${k.lokasi.lng - 0.01}%2C${k.lokasi.lat - 0.01}%2C${k.lokasi.lng + 0.01}%2C${k.lokasi.lat + 0.01}&layer=mapnik&marker=${k.lokasi.lat}%2C${k.lokasi.lng}`}
+              style={{ borderRadius: 8 }}
+              title={k.nama || `Kandang ${index + 1}`}
+            />
+          </Box>
+        </Box>
+      )}
+
+      <Grid gutter="md">
+        <Grid.Col span={{ base: 12, md: 6 }}>
+          <Stack gap="xs">
+            {typeof k.lokasi.lat !== "number" && (
               <>
-                <Group gap={4}>
-                  <IconMapPin size={14} color="var(--app-primary)" />
-                  <Text fz="sm" ff="monospace">
-                    {k.lokasi.lat.toFixed(6)}, {k.lokasi.lng.toFixed(6)}
-                  </Text>
-                  <Anchor
-                    fz="xs"
-                    c="primary.7"
-                    target="_blank"
-                    href={`https://www.openstreetmap.org/?mlat=${k.lokasi.lat}&mlon=${k.lokasi.lng}#map=15/${k.lokasi.lat}/${k.lokasi.lng}`}
-                  >
-                    Buka Peta
-                  </Anchor>
-                </Group>
-                <Box style={{ height: 240, borderRadius: 8, overflow: "hidden", border: "1px solid var(--app-border)" }}>
-                  <iframe
-                    width="100%"
-                    height="100%"
-                    frameBorder="0"
-                    scrolling="no"
-                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${k.lokasi.lng - 0.01}%2C${k.lokasi.lat - 0.01}%2C${k.lokasi.lng + 0.01}%2C${k.lokasi.lat + 0.01}&layer=mapnik&marker=${k.lokasi.lat}%2C${k.lokasi.lng}`}
-                    style={{ borderRadius: 8 }}
-                    title={k.nama || `Kandang ${index + 1}`}
-                  />
-                </Box>
+                <Text fz="xs" fw={700} tt="uppercase" c="dimmed" lts="0.06em">
+                  Lokasi
+                </Text>
+                <Text fz="sm" c="dimmed">—</Text>
               </>
-            ) : (
-              <Text fz="sm" c="dimmed">—</Text>
             )}
             <Text fz="sm" c="dimmed">{k.lokasi.alamat || "—"}</Text>
           </Stack>
