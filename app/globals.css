@@ -188,10 +188,17 @@ a {
   z-index: 3;
 }
 /* Mantine Modal must sit above all Leaflet layers */
-.mantine-Modal-root,
-.mantine-Modal-overlay,
+.mantine-Modal-root {
+  z-index: 10000 !important;
+}
+.mantine-Modal-overlay {
+  z-index: 10000 !important;
+}
 .mantine-Modal-content {
-  z-index: 1000 !important;
+  z-index: 10001 !important;
+}
+.mantine-Overlay-root {
+  z-index: 10000 !important;
 }
 .leaflet-control-attribution {
   font-size: 9px !important;

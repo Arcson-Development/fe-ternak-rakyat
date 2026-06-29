@@ -93,7 +93,7 @@ export function PhotoLightbox({
       padding={0}
       size="xl"
       centered
-      overlayProps={{ opacity: 0.85, blur: 3 }}
+      overlayProps={{ opacity: 0.85, blur: 0 }}
       styles={{
         body: { padding: 0 },
         content: { overflow: "hidden" },
