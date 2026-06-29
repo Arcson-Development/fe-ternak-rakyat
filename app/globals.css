@@ -167,6 +167,31 @@ a {
   width: 100%;
   height: 100%;
   background: #aadaff;
+  z-index: 1;
+}
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer {
+  z-index: 1;
+}
+.leaflet-control {
+  z-index: 2;
+}
+.leaflet-popup {
+  z-index: 3;
+}
+/* Mantine Modal must sit above all Leaflet layers */
+.mantine-Modal-root,
+.mantine-Modal-overlay,
+.mantine-Modal-content {
+  z-index: 1000 !important;
 }
 .leaflet-control-attribution {
   font-size: 9px !important;
