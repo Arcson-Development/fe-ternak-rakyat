@@ -71,7 +71,7 @@ function DashboardContent() {
   }, []);
   const router = useRouter();
   const [mapType, setMapType] = useState<"Ayam Petelur" | "Ayam Pedaging">("Ayam Petelur");
-  const { data: locationData } = useFarmLocations(mapType);
+  const { data: locationData, isError: locError } = useFarmLocations(mapType);
   // Pull a representative sample (200 most-recent records) directly
   // from the backend so the overview stats reflect the server's
   // view, not whatever happens to be in the local store. For the
@@ -201,6 +201,49 @@ function DashboardContent() {
           }
         />
 
+        {/* ── Peta Full Width ── */}
+        <Card padding="lg" radius="md" withBorder shadow="xs">
+          <Group justify="space-between" mb="sm">
+            <Stack gap={2}>
+              <Text fw={700} fz="md">Peta Lokasi Kandang</Text>
+              <Text fz="xs" c="dimmed">
+                {mapPoints.length} pin terdaftar
+              </Text>
+            </Stack>
+            <Group gap="xs">
+              <Button
+                size="xs"
+                variant={mapType === "Ayam Petelur" ? "filled" : "outline"}
+                color={mapType === "Ayam Petelur" ? "yellow" : "gray"}
+                onClick={() => setMapType("Ayam Petelur")}
+                radius="xl"
+              >
+                Ayam Petelur
+              </Button>
+              <Button
+                size="xs"
+                variant={mapType === "Ayam Pedaging" ? "filled" : "outline"}
+                color={mapType === "Ayam Pedaging" ? "blue" : "gray"}
+                onClick={() => setMapType("Ayam Pedaging")}
+                radius="xl"
+              >
+                Ayam Pedaging
+              </Button>
+            </Group>
+          </Group>
+          {locationData === undefined && !locError ? (
+            <Box style={{ height: 360, display: "grid", placeItems: "center" }}>
+              <Loader size="sm" />
+            </Box>
+          ) : locError ? (
+            <Box style={{ height: 360, display: "grid", placeItems: "center" }}>
+              <Text fz="sm" c="red">Gagal memuat data peta</Text>
+            </Box>
+          ) : (
+            <FarmersMap points={mapPoints} height={360} />
+          )}
+        </Card>
+
         <Grid gutter="md">
           <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
             <StatCard
@@ -282,48 +325,6 @@ function DashboardContent() {
                 Konsentrasi peternak berdasarkan kabupaten
               </Text>
               <TopKabupatenBar data={topKabData} height={280} />
-            </Card>
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, lg: 6 }}>
-            <Card padding="lg" radius="md" withBorder shadow="xs" h="100%">
-              <Group justify="space-between" mb="sm">
-                <Stack gap={2}>
-                  <Text fw={700} fz="md">Peta Lokasi Kandang</Text>
-                  <Text fz="xs" c="dimmed">
-                    {mapPoints.length} pin terdaftar
-                  </Text>
-                </Stack>
-                <ThemeIcon variant="light" color="primary" size="lg" radius="md">
-                  <IconMap2 size={18} />
-                </ThemeIcon>
-              </Group>
-              <Group gap="xs" mb="sm">
-                <Button
-                  size="xs"
-                  variant={mapType === "Ayam Petelur" ? "filled" : "outline"}
-                  color={mapType === "Ayam Petelur" ? "yellow" : "gray"}
-                  onClick={() => setMapType("Ayam Petelur")}
-                  radius="xl"
-                >
-                  Ayam Petelur
-                </Button>
-                <Button
-                  size="xs"
-                  variant={mapType === "Ayam Pedaging" ? "filled" : "outline"}
-                  color={mapType === "Ayam Pedaging" ? "blue" : "gray"}
-                  onClick={() => setMapType("Ayam Pedaging")}
-                  radius="xl"
-                >
-                  Ayam Pedaging
-                </Button>
-              </Group>
-              {locationData === undefined ? (
-                <Box style={{ height: 280, display: "grid", placeItems: "center" }}>
-                  <Loader size="sm" />
-                </Box>
-              ) : (
-                <FarmersMap points={mapPoints} height={280} />
-              )}
             </Card>
           </Grid.Col>
         </Grid>
