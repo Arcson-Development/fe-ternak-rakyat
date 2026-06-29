@@ -600,7 +600,7 @@ function KandangCard({ k, index, onOpenLightbox }: { k: Kandang; index: number; 
                     Buka Peta
                   </Anchor>
                 </Group>
-                <Box style={{ height: 160, borderRadius: 8, overflow: "hidden", border: "1px solid var(--app-border)" }}>
+                <Box style={{ height: 240, borderRadius: 8, overflow: "hidden", border: "1px solid var(--app-border)" }}>
                   <iframe
                     width="100%"
                     height="100%"
