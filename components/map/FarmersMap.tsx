@@ -22,7 +22,6 @@ type Props = {
 export default function FarmersMap({ points, height = 360 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
-  const layerRef = useRef<any>(null);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -40,29 +39,14 @@ export default function FarmersMap({ points, height = 360 }: Props) {
         attribution: "&copy; OpenStreetMap",
         maxZoom: 19,
       }).addTo(map);
-      const layer = L.layerGroup().addTo(map);
-      layerRef.current = layer;
       mapRef.current = map;
-    })();
-    return () => {
-      cancelled = true;
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-        layerRef.current = null;
-      }
-    };
-  }, []);
 
-  useEffect(() => {
-    if (!mapRef.current || !layerRef.current) return;
-    (async () => {
-      const L = (await import("leaflet")).default;
-      layerRef.current.clearLayers();
+      // Add markers after map is ready
       const valid = points.filter(
         (p) => typeof p.lat === "number" && typeof p.lng === "number"
       );
       const bounds: [number, number][] = [];
+      const layer = L.layerGroup().addTo(map);
       valid.forEach((p) => {
         L.circleMarker([p.lat, p.lng], {
           radius: 8,
@@ -72,14 +56,21 @@ export default function FarmersMap({ points, height = 360 }: Props) {
           opacity: 1,
           fillOpacity: 0.9,
         })
-          .addTo(layerRef.current)
+          .addTo(layer)
           .bindPopup(`<div style="font-size:12px;font-weight:600;">${p.label}</div>`);
         bounds.push([p.lat, p.lng]);
       });
       if (bounds.length > 0) {
-        mapRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 9 });
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 9 });
       }
     })();
+    return () => {
+      cancelled = true;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
   }, [points]);
 
   if (points.length === 0) {
