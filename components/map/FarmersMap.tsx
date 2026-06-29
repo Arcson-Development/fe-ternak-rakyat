@@ -34,6 +34,7 @@ export default function FarmersMap({ points, height = 360, onSelect, selectedDat
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
   const markerMapRef = useRef<Map<number, any>>(new Map());
+  const resizeObs = useRef<ResizeObserver | null>(null);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -52,6 +53,30 @@ export default function FarmersMap({ points, height = 360, onSelect, selectedDat
         maxZoom: 19,
       }).addTo(map);
       mapRef.current = map;
+
+      // Watch container size — whenever it becomes visible (tab switch,
+      // layout shift, etc.), force Leaflet to re-measure.
+      if (typeof ResizeObserver !== "undefined" && containerRef.current) {
+        resizeObs.current = new ResizeObserver(() => {
+          map.invalidateSize();
+        });
+        resizeObs.current.observe(containerRef.current);
+      }
+      // Watch visibility — when container scrolls into view (e.g. tab
+      // becomes active), force Leaflet to re-measure so tiles fill the
+      // visible area, not just the initial (often 0×0) size.
+      if (typeof IntersectionObserver !== "undefined" && containerRef.current) {
+        const visObs = new IntersectionObserver((entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              map.invalidateSize();
+            }
+          }
+        });
+        visObs.observe(containerRef.current);
+        // Stash on the map ref for cleanup
+        (map as any)._visObs = visObs;
+      }
 
       // Add markers
       const valid = points.filter(
@@ -95,10 +120,17 @@ export default function FarmersMap({ points, height = 360, onSelect, selectedDat
     return () => {
       cancelled = true;
       if (mapRef.current) {
+        if ((mapRef.current as any)._visObs) {
+          (mapRef.current as any)._visObs.disconnect();
+        }
         mapRef.current.remove();
         mapRef.current = null;
       }
       markerMapRef.current = new Map();
+      if (resizeObs.current) {
+        resizeObs.current.disconnect();
+        resizeObs.current = null;
+      }
     };
   }, [points]);
 

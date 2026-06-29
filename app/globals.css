@@ -164,6 +164,9 @@ a {
 /* Leaflet UI polish */
 .leaflet-container {
   font-family: inherit;
+  width: 100%;
+  height: 100%;
+  background: #aadaff;
 }
 .leaflet-control-attribution {
   font-size: 9px !important;
