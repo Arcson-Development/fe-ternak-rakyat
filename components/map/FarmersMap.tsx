@@ -79,6 +79,9 @@ export default function FarmersMap({ points, height = 360, onSelect, selectedDat
       if (bounds.length > 0) {
         map.fitBounds(bounds, { padding: [40, 40], maxZoom: 9 });
       }
+      // Handle hidden containers (e.g., non-active tabs):
+      // force Leaflet to re-read dimensions after mount.
+      setTimeout(() => map.invalidateSize(), 200);
     })();
     return () => {
       cancelled = true;

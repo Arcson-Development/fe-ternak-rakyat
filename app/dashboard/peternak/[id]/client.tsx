@@ -371,7 +371,7 @@ function PeternakDetailInner() {
         <Tabs.Panel value="identitas" pt="md">
           <IdentitasTab p={peternak} onOpenLightbox={openLightbox} />
         </Tabs.Panel>
-        <Tabs.Panel value="kandang" pt="md">
+        <Tabs.Panel value="kandang" pt="md" keepMounted={true}>
           <KandangListTab p={peternak} onOpenLightbox={openLightbox} />
         </Tabs.Panel>
 
