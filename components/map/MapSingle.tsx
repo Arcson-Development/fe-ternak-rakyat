@@ -10,17 +10,24 @@ type Props = {
 
 /**
  * Single-marker Leaflet map for embedding in kandang cards.
+ * Stores map instance in a ref so the React cleanup can destroy it.
  */
 export default function MapSingle({ lat, lng, label }: Props) {
-  const ref = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!containerRef.current) return;
+    if (mapRef.current) {
+      // Already initialised — just re-centre if coords changed
+      mapRef.current.setView([lat, lng], mapRef.current.getZoom());
+      return;
+    }
     let cancelled = false;
     (async () => {
       const L = (await import("leaflet")).default;
-      if (cancelled || !ref.current) return;
-      const map = L.map(ref.current, {
+      if (cancelled || !containerRef.current) return;
+      const map = L.map(containerRef.current, {
         center: [lat, lng],
         zoom: 15,
         scrollWheelZoom: true,
@@ -38,14 +45,16 @@ export default function MapSingle({ lat, lng, label }: Props) {
       })
         .addTo(map)
         .bindPopup(label || "");
-      return () => {
-        map.remove();
-      };
+      if (!cancelled) mapRef.current = map;
     })();
     return () => {
       cancelled = true;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
     };
   }, [lat, lng]);
 
-  return <div ref={ref} style={{ width: "100%", height: "100%" }} />;
+  return <div ref={containerRef} style={{ width: "100%", height: "100%" }} />;
 }
