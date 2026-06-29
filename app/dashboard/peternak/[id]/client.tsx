@@ -74,6 +74,7 @@ import { buildSinglePeternakWorkbook, downloadWorkbook, TIMESTAMP } from "../../
 import dynamic from "next/dynamic";
 
 const FarmersMap = dynamic(() => import("../../../../components/map/FarmersMap"), { ssr: false });
+const MapSingle = dynamic(() => import("../../../../components/map/MapSingle"), { ssr: false });
 
 function PeternakDetailContent() {
   const [ready, setReady] = useState(false);
@@ -522,30 +523,6 @@ function KandangListTab({ p, onOpenLightbox }: { p: Peternak; onOpenLightbox: (p
   }
   return (
     <Stack gap="md">
-      {/* Location map */}
-      {(() => {
-        const points = p.kandang
-          .filter((k) => typeof k.lokasi.lat === "number" && typeof k.lokasi.lng === "number")
-          .map((k) => ({ lat: k.lokasi.lat!, lng: k.lokasi.lng!, label: k.nama || `Kandang ${p.kandang.indexOf(k) + 1}`, id: 0 }));
-        if (points.length > 0) {
-          return (
-            <Card withBorder padding="md" radius="md" shadow="xs">
-              <Group gap="sm" mb="sm">
-                <ThemeIcon variant="light" color="primary" size="lg" radius="md">
-                  <IconCurrentLocation size={18} />
-                </ThemeIcon>
-                <Text fw={700} fz="md">Lokasi Kandang</Text>
-                <Text fz="xs" c="dimmed">{points.length} titik</Text>
-              </Group>
-              <Box style={{ height: 280, borderRadius: 8, overflow: "hidden" }}>
-                <FarmersMap points={points} height={280} />
-              </Box>
-            </Card>
-          );
-        }
-        return null;
-      })()}
-
       {p.kandang.map((k, i) => (
         <KandangCard key={k.id} k={k} index={i} onOpenLightbox={onOpenLightbox} />
       ))}
@@ -610,26 +587,14 @@ function KandangCard({ k, index, onOpenLightbox }: { k: Kandang; index: number; 
             <Text fz="xs" fw={700} tt="uppercase" c="dimmed" lts="0.06em">
               Lokasi
             </Text>
-            <Group gap={4}>
-              <IconMapPin size={14} color="var(--app-primary)" />
-              <Text fz="sm" ff="monospace">
-                {k.lokasi.lat?.toFixed(6)}, {k.lokasi.lng?.toFixed(6)}
-              </Text>
-            </Group>
-            <Text fz="sm" c="dimmed">{k.lokasi.alamat || "—"}</Text>
-            {k.lokasi.lat !== null && k.lokasi.lng !== null && (
-              <Anchor
-                fz="xs"
-                c="primary.7"
-                target="_blank"
-                href={`https://www.openstreetmap.org/?mlat=${k.lokasi.lat}&mlon=${k.lokasi.lng}#map=15/${k.lokasi.lat}/${k.lokasi.lng}`}
-              >
-                <Group gap={4}>
-                  <IconCurrentLocation size={12} />
-                  <Text fz="xs" inherit>Lihat di Peta</Text>
-                </Group>
-              </Anchor>
+            {typeof k.lokasi.lat === "number" && typeof k.lokasi.lng === "number" ? (
+              <Box style={{ height: 160, borderRadius: 8, overflow: "hidden", border: "1px solid var(--app-border)" }}>
+                <MapSingle lat={k.lokasi.lat} lng={k.lokasi.lng} label={k.nama || `Kandang ${index + 1}`} />
+              </Box>
+            ) : (
+              <Text fz="sm" c="dimmed">—</Text>
             )}
+            <Text fz="sm" c="dimmed">{k.lokasi.alamat || "—"}</Text>
           </Stack>
         </Grid.Col>
 
