@@ -8,18 +8,19 @@ import { IconMap2 } from "@tabler/icons-react";
 // before the dynamic leaflet import further down.
 import "./leafletInit";
 
-type Lokasi = { lat: number; lng: number; label: string };
+type Lokasi = { lat: number; lng: number; label: string; id: number };
 
 type Props = {
   points: Lokasi[];
   height?: number;
+  onSelect?: (id: number) => void;
 };
 
 /**
  * Multi-marker Leaflet map for the dashboard. Each farmer's first
  * available coordinate is shown as a pin. Click a pin to focus it.
  */
-export default function FarmersMap({ points, height = 360 }: Props) {
+export default function FarmersMap({ points, height = 360, onSelect }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
 
@@ -48,7 +49,7 @@ export default function FarmersMap({ points, height = 360 }: Props) {
       const bounds: [number, number][] = [];
       const layer = L.layerGroup().addTo(map);
       valid.forEach((p) => {
-        L.circleMarker([p.lat, p.lng], {
+        const marker = L.circleMarker([p.lat, p.lng], {
           radius: 8,
           fillColor: "#f59e0b",
           color: "#fff",
@@ -58,6 +59,7 @@ export default function FarmersMap({ points, height = 360 }: Props) {
         })
           .addTo(layer)
           .bindPopup(`<div style="font-size:12px;font-weight:600;">${p.label}</div>`);
+        marker.on("click", () => onSelect?.(p.id));
         bounds.push([p.lat, p.lng]);
       });
       if (bounds.length > 0) {
