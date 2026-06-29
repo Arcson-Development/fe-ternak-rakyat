@@ -26,6 +26,7 @@ import {
   IconClock,
   IconActivityHeartbeat,
   IconMap2,
+  IconEye,
 } from "@tabler/icons-react";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { DashboardSkeleton } from "../../components/skeletons";
@@ -37,6 +38,7 @@ import {
   JENIS_USAHA_LABEL,
   KATEGORI_LABEL,
   useFarmLocations,
+  useFormById,
 } from "../../hooks/useTernakRakyat";
 import { KategoriDonut, TopKabupatenBar, TrendArea } from "../../components/charts";
 import dynamic from "next/dynamic";
@@ -71,6 +73,8 @@ function DashboardContent() {
   const router = useRouter();
   const [mapType, setMapType] = useState<"Ayam Petelur" | "Ayam Pedaging">("Ayam Petelur");
   const { data: locationData, isError: locError } = useFarmLocations(mapType);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const { data: selectedDetail } = useFormById(selectedId ?? undefined);
   // Pull a representative sample (200 most-recent records) directly
   // from the backend so the overview stats reflect the server's
   // view, not whatever happens to be in the local store. For the
@@ -239,9 +243,45 @@ function DashboardContent() {
               <Text fz="sm" c="red">Gagal memuat data peta</Text>
             </Box>
           ) : (
-            <FarmersMap points={mapPoints} height={360} />
+            <FarmersMap points={mapPoints} height={360} onSelect={setSelectedId} />
           )}
         </Card>
+
+        {/* ── Selected Peternak Info ── */}
+        {selectedDetail && (
+          <Card padding="md" radius="md" withBorder shadow="xs">
+            <Group justify="space-between" align="flex-start">
+              <Stack gap={4}>
+                <Text fw={700} fz="md">{selectedDetail.nama}</Text>
+                <Group gap="xs">
+                  <Badge variant="light" color="primary" size="sm">
+                    {selectedDetail.kategori_peternak}
+                  </Badge>
+                  <Text fz="xs" c="dimmed">#{selectedDetail.id}</Text>
+                </Group>
+                <Text fz="sm" mt={4}>
+                  {selectedDetail.alamat}, {selectedDetail.kelurahan},{" "}
+                  {selectedDetail.kecamatan}, {selectedDetail.kabupaten}
+                </Text>
+                <Text fz="xs" c="dimmed">
+                  {selectedDetail.ktp_no && `KTP: ${selectedDetail.ktp_no} · `}
+                  {selectedDetail.form_peternakan_kandang?.length ?? 0} kandang
+                </Text>
+              </Stack>
+              <Button
+                variant="light"
+                size="xs"
+                rightSection={<IconEye size={14} />}
+                onClick={() => {
+                  setSelectedId(null);
+                  router.push(`/dashboard/peternak/${selectedDetail.id}`);
+                }}
+              >
+                Detail
+              </Button>
+            </Group>
+          </Card>
+        )}
 
         <Grid gutter="md">
           <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>

@@ -71,6 +71,9 @@ import {
   type Peternak,
 } from "../../../../hooks/useTernakRakyat";
 import { buildSinglePeternakWorkbook, downloadWorkbook, TIMESTAMP } from "../../../../lib/export";
+import dynamic from "next/dynamic";
+
+const FarmersMap = dynamic(() => import("../../../../components/map/FarmersMap"), { ssr: false });
 
 function PeternakDetailContent() {
   const [ready, setReady] = useState(false);
@@ -519,6 +522,30 @@ function KandangListTab({ p, onOpenLightbox }: { p: Peternak; onOpenLightbox: (p
   }
   return (
     <Stack gap="md">
+      {/* Location map */}
+      {(() => {
+        const points = p.kandang
+          .filter((k) => typeof k.lokasi.lat === "number" && typeof k.lokasi.lng === "number")
+          .map((k) => ({ lat: k.lokasi.lat!, lng: k.lokasi.lng!, label: k.nama || `Kandang ${p.kandang.indexOf(k) + 1}`, id: 0 }));
+        if (points.length > 0) {
+          return (
+            <Card withBorder padding="md" radius="md" shadow="xs">
+              <Group gap="sm" mb="sm">
+                <ThemeIcon variant="light" color="primary" size="lg" radius="md">
+                  <IconCurrentLocation size={18} />
+                </ThemeIcon>
+                <Text fw={700} fz="md">Lokasi Kandang</Text>
+                <Text fz="xs" c="dimmed">{points.length} titik</Text>
+              </Group>
+              <Box style={{ height: 280, borderRadius: 8, overflow: "hidden" }}>
+                <FarmersMap points={points} height={280} />
+              </Box>
+            </Card>
+          );
+        }
+        return null;
+      })()}
+
       {p.kandang.map((k, i) => (
         <KandangCard key={k.id} k={k} index={i} onOpenLightbox={onOpenLightbox} />
       ))}
