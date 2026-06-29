@@ -64,7 +64,13 @@ export default function FarmersMap({ points, height = 360 }: Props) {
       );
       const bounds: [number, number][] = [];
       valid.forEach((p) => {
-        L.marker([p.lat, p.lng])
+        const icon = L.divIcon({
+          className: "",
+          html: `<div style="width:16px;height:16px;background:#f59e0b;border:3px solid white;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div>`,
+          iconSize: [16, 16],
+          iconAnchor: [8, 8],
+        });
+        L.marker([p.lat, p.lng], { icon })
           .addTo(layerRef.current)
           .bindPopup(`<div style="font-size:12px;font-weight:600;">${p.label}</div>`);
         bounds.push([p.lat, p.lng]);
