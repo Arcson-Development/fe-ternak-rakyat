@@ -206,6 +206,7 @@ function KondisiBlock({
           value={photo}
           onChange={onPhotoChange}
           aspect={4 / 3}
+          optional
         />
       </Stack>
     </Card>
@@ -213,20 +214,14 @@ function KondisiBlock({
 }
 
 function isKandangComplete(k: Kandang): boolean {
+  // Foto is optional — only the kondisi (rating) is required.
   return Boolean(
     k.kondisi.dinding.kondisi &&
       k.kondisi.atap.kondisi &&
       k.kondisi.lantai.kondisi &&
-      k.kondisi.dinding.foto.preview &&
-      k.kondisi.atap.foto.preview &&
-      k.kondisi.lantai.foto.preview &&
       k.peralatan.tempatMinum.kondisi &&
       k.peralatan.tempatMakan.kondisi &&
       k.peralatan.brooding.kondisi &&
-      k.peralatan.kipas.kondisi &&
-      k.peralatan.tempatMinum.foto.preview &&
-      k.peralatan.tempatMakan.foto.preview &&
-      k.peralatan.brooding.foto.preview &&
-      k.peralatan.kipas.foto.preview
+      k.peralatan.kipas.kondisi
   );
 }

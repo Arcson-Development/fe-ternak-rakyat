@@ -25,6 +25,8 @@ type Props = {
   label: string;
   value: PhotoRef;
   onChange: (next: PhotoRef) => void;
+  /** When true, the label shows "(Opsional)" so users know the field isn't required. */
+  optional?: boolean;
   /** Optional help text under the label. */
   description?: string;
   /** Optional aspect ratio (default 16/10) for the preview. */
@@ -97,6 +99,7 @@ export function FileUploadCard({
   value,
   onChange,
   aspect = 16 / 10,
+  optional = false,
 }: Props) {
   const previewUsable = usePreviewUsable(value);
   const openRef = useRef<() => void>(null);
@@ -154,6 +157,11 @@ export function FileUploadCard({
           <Stack gap={0}>
             <Text fz="sm" fw={600}>
               {label}
+              {optional && (
+                <Text component="span" c="dimmed" fz="xs" ml={4}>
+                  (Opsional)
+                </Text>
+              )}
             </Text>
             {value.name && (
               <Text fz="xs" c="dimmed">
@@ -294,6 +302,11 @@ export function FileUploadCard({
         <Stack gap={0} style={{ minWidth: 0 }}>
           <Text fz="sm" fw={600}>
             {label}
+            {optional && (
+              <Text component="span" c="dimmed" fz="xs" ml={4}>
+                (Opsional)
+              </Text>
+            )}
           </Text>
           {value.name && !value.file ? (
             // PhotoRef has a name (from a previous session's draft) but

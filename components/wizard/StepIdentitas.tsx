@@ -125,6 +125,7 @@ export function StepIdentitas({ value, onChange, errors }: Props) {
               value={value.ktp}
               onChange={(next) => set("ktp", next)}
               description="Pastikan foto jelas, tidak blur, dan semua info terbaca."
+              optional
             />
             {errors.ktp && (
               <Text fz="xs" c="red" mt={4}>
