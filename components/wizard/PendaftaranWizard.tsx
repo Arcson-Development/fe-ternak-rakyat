@@ -601,7 +601,7 @@ function isIdentitasValid(v: IdentitasState): boolean {
   return (
     v.nama.trim().length >= 3 &&
     /^\d{16}$/.test(v.noKtp) &&
-    !!v.ktp.preview &&
+    // ktp.preview is optional
     !!v.kategori &&
     !!v.alamat.provinsi &&
     !!v.alamat.kabupaten &&
@@ -620,7 +620,8 @@ function identitasErrors(v: IdentitasState) {
         : !/^\d{16}$/.test(v.noKtp)
         ? "No KTP harus 16 digit angka"
         : null,
-    ktp: !v.ktp.preview ? "Lampirkan foto KTP" : null,
+    // ktp photo is optional — no error
+    ktp: null,
     kategori: !v.kategori ? "Pilih kategori peternak" : null,
     // Catatan is optional; only flag if it overflows the 500-char cap.
     catatan:
@@ -652,22 +653,16 @@ function isKandangStepValid(list: Kandang[]): boolean {
 }
 
 function isKondisiPeralatanValid(list: Kandang[]): boolean {
+  // Only kondisi (rating) is required. All foto uploads are optional.
   return list.every(
     (k) =>
       k.kondisi.dinding.kondisi &&
       k.kondisi.atap.kondisi &&
       k.kondisi.lantai.kondisi &&
-      k.kondisi.dinding.foto.preview &&
-      k.kondisi.atap.foto.preview &&
-      k.kondisi.lantai.foto.preview &&
       k.peralatan.tempatMinum.kondisi &&
       k.peralatan.tempatMakan.kondisi &&
       k.peralatan.brooding.kondisi &&
-      k.peralatan.kipas.kondisi &&
-      k.peralatan.tempatMinum.foto.preview &&
-      k.peralatan.tempatMakan.foto.preview &&
-      k.peralatan.brooding.foto.preview &&
-      k.peralatan.kipas.foto.preview
+      k.peralatan.kipas.kondisi
   );
 }
 
